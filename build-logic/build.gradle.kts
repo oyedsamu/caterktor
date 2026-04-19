@@ -8,4 +8,5 @@ dependencies {
     implementation(libs.android.gradle.plugin)
     implementation(libs.android.kmp.library.plugin)
     implementation(libs.bcv.plugin)
+    implementation(libs.vanniktech.publish.plugin)
 }

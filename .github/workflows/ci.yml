@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  check-jvm:
+    name: JVM tests, Android compile, API check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_CACHE_KEY }}
+
+      - name: Run JVM tests, compile Android, verify API dumps
+        run: ./gradlew check apiCheck --stacktrace
+
+  check-apple:
+    name: Compile Apple targets (iOS + macOS)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_CACHE_KEY }}
+
+      - name: Compile Apple targets
+        run: >-
+          ./gradlew
+          compileKotlinIosArm64
+          compileKotlinIosSimulatorArm64
+          compileKotlinIosX64
+          compileKotlinMacosArm64
+          compileKotlinMacosX64
+          --stacktrace
+
+  check-linux-native:
+    name: Compile Linux native targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_CACHE_KEY }}
+
+      - name: Compile Linux native targets
+        run: ./gradlew compileKotlinLinuxX64 compileKotlinLinuxArm64 --stacktrace

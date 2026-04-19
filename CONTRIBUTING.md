@@ -13,7 +13,11 @@ meaningful number of "obvious" features are explicit non-goals.
 
 ### Prerequisites
 
-- JDK 11 or newer.
+- JDK 11–24 (Temurin 21 recommended). Gradle 8.14.4 does not support JDK 25
+  or later, including EA builds. If your `JAVA_HOME` points at JDK 25+, the
+  Gradle daemon will refuse to start. Set `JAVA_HOME` to a supported JDK or
+  add `org.gradle.java.home=/path/to/jdk21` to your local `local.properties`
+  (already gitignored).
 - Android SDK (for the `android` target).
 - Xcode with the command-line tools (for the Apple targets: `iosArm64`,
   `iosSimulatorArm64`, `iosX64`, `macosArm64`, `macosX64`). Apple targets can

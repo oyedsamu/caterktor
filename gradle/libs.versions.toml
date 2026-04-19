@@ -1,5 +1,6 @@
 [versions]
 kotlin = "2.3.0"
+vanniktech = "0.30.0"
 ktor = "3.4.0"
 coroutines = "1.10.2"
 serialization = "1.10.0"
@@ -35,6 +36,7 @@ kotlin-serialization-plugin = { module = "org.jetbrains.kotlin:kotlin-serializat
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 android-kmp-library-plugin = { module = "com.android.kotlin.multiplatform.library:com.android.kotlin.multiplatform.library.gradle.plugin", version.ref = "agp" }
 bcv-plugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "bcv" }
+vanniktech-publish-plugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "vanniktech" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -43,3 +45,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 agp-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "bcv" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+vanniktech-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech" }
