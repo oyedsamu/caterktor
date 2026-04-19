@@ -1,0 +1,333 @@
+public final class io/github/oyedsamu/caterktor/ConnectionFailureKind : java/lang/Enum {
+	public static final field Dns Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
+	public static final field Refused Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
+	public static final field TlsHandshake Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
+	public static final field Unreachable Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
+	public static fun values ()[Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
+}
+
+public final class io/github/oyedsamu/caterktor/ErrorBody {
+	public static final field Companion Lio/github/oyedsamu/caterktor/ErrorBody$Companion;
+	public fun <init> (Lio/github/oyedsamu/caterktor/RawBody;Ljava/lang/Object;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getParsed ()Ljava/lang/Object;
+	public final fun getRaw ()Lio/github/oyedsamu/caterktor/RawBody;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/ErrorBody$Companion {
+	public final fun getEmpty ()Lio/github/oyedsamu/caterktor/ErrorBody;
+}
+
+public abstract interface annotation class io/github/oyedsamu/caterktor/ExperimentalCaterktor : java/lang/annotation/Annotation {
+}
+
+public final class io/github/oyedsamu/caterktor/Headers {
+	public static final field Companion Lio/github/oyedsamu/caterktor/Headers$Companion;
+	public synthetic fun <init> (Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun contains (Ljava/lang/String;)Z
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun get (Ljava/lang/String;)Ljava/lang/String;
+	public final fun getAll (Ljava/lang/String;)Ljava/util/List;
+	public final fun getNames ()Ljava/util/Set;
+	public fun hashCode ()I
+	public final fun plus (Lio/github/oyedsamu/caterktor/Headers;)Lio/github/oyedsamu/caterktor/Headers;
+	public final fun toMap ()Ljava/util/Map;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/Headers$Builder {
+	public fun <init> ()V
+	public final fun add (Ljava/lang/String;Ljava/lang/String;)Lio/github/oyedsamu/caterktor/Headers$Builder;
+	public final fun build ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun set (Ljava/lang/String;Ljava/lang/String;)Lio/github/oyedsamu/caterktor/Headers$Builder;
+}
+
+public final class io/github/oyedsamu/caterktor/Headers$Companion {
+	public final fun getEmpty ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/Headers;
+	public final fun of ([Lkotlin/Pair;)Lio/github/oyedsamu/caterktor/Headers;
+}
+
+public final class io/github/oyedsamu/caterktor/HttpMethod : java/lang/Enum {
+	public static final field DELETE Lio/github/oyedsamu/caterktor/HttpMethod;
+	public static final field GET Lio/github/oyedsamu/caterktor/HttpMethod;
+	public static final field HEAD Lio/github/oyedsamu/caterktor/HttpMethod;
+	public static final field OPTIONS Lio/github/oyedsamu/caterktor/HttpMethod;
+	public static final field PATCH Lio/github/oyedsamu/caterktor/HttpMethod;
+	public static final field POST Lio/github/oyedsamu/caterktor/HttpMethod;
+	public static final field PUT Lio/github/oyedsamu/caterktor/HttpMethod;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun isIdempotent ()Z
+	public final fun isSafe ()Z
+	public static fun valueOf (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/HttpMethod;
+	public static fun values ()[Lio/github/oyedsamu/caterktor/HttpMethod;
+}
+
+public final class io/github/oyedsamu/caterktor/HttpStatus {
+	public static final field Companion Lio/github/oyedsamu/caterktor/HttpStatus$Companion;
+	public static final synthetic fun box-impl (I)Lio/github/oyedsamu/caterktor/HttpStatus;
+	public static fun constructor-impl (I)I
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (ILjava/lang/Object;)Z
+	public static final fun equals-impl0 (II)Z
+	public final fun getCode ()I
+	public fun hashCode ()I
+	public static fun hashCode-impl (I)I
+	public static final fun isClientError-impl (I)Z
+	public static final fun isInformational-impl (I)Z
+	public static final fun isRedirect-impl (I)Z
+	public static final fun isServerError-impl (I)Z
+	public static final fun isSuccess-impl (I)Z
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (I)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()I
+}
+
+public final class io/github/oyedsamu/caterktor/HttpStatus$Companion {
+	public final fun getAccepted-ob9oPJY ()I
+	public final fun getBadGateway-ob9oPJY ()I
+	public final fun getBadRequest-ob9oPJY ()I
+	public final fun getConflict-ob9oPJY ()I
+	public final fun getCreated-ob9oPJY ()I
+	public final fun getForbidden-ob9oPJY ()I
+	public final fun getFound-ob9oPJY ()I
+	public final fun getGatewayTimeout-ob9oPJY ()I
+	public final fun getGone-ob9oPJY ()I
+	public final fun getInternalServerError-ob9oPJY ()I
+	public final fun getMethodNotAllowed-ob9oPJY ()I
+	public final fun getMovedPermanently-ob9oPJY ()I
+	public final fun getNoContent-ob9oPJY ()I
+	public final fun getNotFound-ob9oPJY ()I
+	public final fun getNotModified-ob9oPJY ()I
+	public final fun getOK-ob9oPJY ()I
+	public final fun getServiceUnavailable-ob9oPJY ()I
+	public final fun getTooManyRequests-ob9oPJY ()I
+	public final fun getUnauthorized-ob9oPJY ()I
+	public final fun getUnprocessableEntity-ob9oPJY ()I
+}
+
+public abstract interface class io/github/oyedsamu/caterktor/NetworkError {
+	public abstract fun getCause ()Ljava/lang/Throwable;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkError$ConnectionFailed : io/github/oyedsamu/caterktor/NetworkError {
+	public fun <init> (Lio/github/oyedsamu/caterktor/ConnectionFailureKind;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/ConnectionFailureKind;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Lio/github/oyedsamu/caterktor/ConnectionFailureKind;Ljava/lang/Throwable;)Lio/github/oyedsamu/caterktor/NetworkError$ConnectionFailed;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkError$ConnectionFailed;Lio/github/oyedsamu/caterktor/ConnectionFailureKind;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkError$ConnectionFailed;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCause ()Ljava/lang/Throwable;
+	public final fun getKind ()Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkError$Http : io/github/oyedsamu/caterktor/NetworkError {
+	public synthetic fun <init> (ILio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/ErrorBody;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ILio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/ErrorBody;Ljava/lang/Throwable;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-ob9oPJY ()I
+	public final fun component2 ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun component3 ()Lio/github/oyedsamu/caterktor/ErrorBody;
+	public final fun component4 ()Ljava/lang/Throwable;
+	public final fun copy-LNLT3OE (ILio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/ErrorBody;Ljava/lang/Throwable;)Lio/github/oyedsamu/caterktor/NetworkError$Http;
+	public static synthetic fun copy-LNLT3OE$default (Lio/github/oyedsamu/caterktor/NetworkError$Http;ILio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/ErrorBody;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkError$Http;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBody ()Lio/github/oyedsamu/caterktor/ErrorBody;
+	public fun getCause ()Ljava/lang/Throwable;
+	public final fun getHeaders ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun getStatus-ob9oPJY ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkError$Protocol : io/github/oyedsamu/caterktor/NetworkError {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lio/github/oyedsamu/caterktor/NetworkError$Protocol;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkError$Protocol;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkError$Protocol;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCause ()Ljava/lang/Throwable;
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkError$Serialization : io/github/oyedsamu/caterktor/NetworkError {
+	public fun <init> (Lio/github/oyedsamu/caterktor/SerializationPhase;Lio/github/oyedsamu/caterktor/RawBody;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/SerializationPhase;Lio/github/oyedsamu/caterktor/RawBody;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/github/oyedsamu/caterktor/SerializationPhase;
+	public final fun component2 ()Lio/github/oyedsamu/caterktor/RawBody;
+	public final fun component3 ()Ljava/lang/Throwable;
+	public final fun copy (Lio/github/oyedsamu/caterktor/SerializationPhase;Lio/github/oyedsamu/caterktor/RawBody;Ljava/lang/Throwable;)Lio/github/oyedsamu/caterktor/NetworkError$Serialization;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkError$Serialization;Lio/github/oyedsamu/caterktor/SerializationPhase;Lio/github/oyedsamu/caterktor/RawBody;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkError$Serialization;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCause ()Ljava/lang/Throwable;
+	public final fun getPhase ()Lio/github/oyedsamu/caterktor/SerializationPhase;
+	public final fun getRawBody ()Lio/github/oyedsamu/caterktor/RawBody;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkError$Timeout : io/github/oyedsamu/caterktor/NetworkError {
+	public fun <init> (Lio/github/oyedsamu/caterktor/TimeoutKind;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/TimeoutKind;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/github/oyedsamu/caterktor/TimeoutKind;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Lio/github/oyedsamu/caterktor/TimeoutKind;Ljava/lang/Throwable;)Lio/github/oyedsamu/caterktor/NetworkError$Timeout;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkError$Timeout;Lio/github/oyedsamu/caterktor/TimeoutKind;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkError$Timeout;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCause ()Ljava/lang/Throwable;
+	public final fun getKind ()Lio/github/oyedsamu/caterktor/TimeoutKind;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkError$Unknown : io/github/oyedsamu/caterktor/NetworkError {
+	public fun <init> (Ljava/lang/Throwable;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Throwable;)Lio/github/oyedsamu/caterktor/NetworkError$Unknown;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkError$Unknown;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkError$Unknown;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCause ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkRequest {
+	public static final field Companion Lio/github/oyedsamu/caterktor/NetworkRequest$Companion;
+	public fun <init> (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/util/Map;)V
+	public final fun component1 ()Lio/github/oyedsamu/caterktor/HttpMethod;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun component4 ()Lio/github/oyedsamu/caterktor/RequestBody;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun copy (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/util/Map;)Lio/github/oyedsamu/caterktor/NetworkRequest;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkRequest;Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/util/Map;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkRequest;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBody ()Lio/github/oyedsamu/caterktor/RequestBody;
+	public final fun getHeaders ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun getMethod ()Lio/github/oyedsamu/caterktor/HttpMethod;
+	public final fun getTags ()Ljava/util/Map;
+	public final fun getUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkRequest$Companion {
+	public final fun invoke (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/util/Map;)Lio/github/oyedsamu/caterktor/NetworkRequest;
+	public static synthetic fun invoke$default (Lio/github/oyedsamu/caterktor/NetworkRequest$Companion;Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/util/Map;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkRequest;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkResponse {
+	public synthetic fun <init> (ILio/github/oyedsamu/caterktor/Headers;[BLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-ob9oPJY ()I
+	public final fun component2 ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun component3 ()[B
+	public final fun copy-K5QOUhE (ILio/github/oyedsamu/caterktor/Headers;[B)Lio/github/oyedsamu/caterktor/NetworkResponse;
+	public static synthetic fun copy-K5QOUhE$default (Lio/github/oyedsamu/caterktor/NetworkResponse;ILio/github/oyedsamu/caterktor/Headers;[BILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkResponse;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBody ()[B
+	public final fun getHeaders ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun getStatus-ob9oPJY ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/oyedsamu/caterktor/NetworkResult {
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkResult$Failure : io/github/oyedsamu/caterktor/NetworkResult {
+	public fun <init> (Lio/github/oyedsamu/caterktor/NetworkError;JILjava/lang/String;)V
+	public final fun component1 ()Lio/github/oyedsamu/caterktor/NetworkError;
+	public final fun component2 ()J
+	public final fun component3 ()I
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Lio/github/oyedsamu/caterktor/NetworkError;JILjava/lang/String;)Lio/github/oyedsamu/caterktor/NetworkResult$Failure;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkResult$Failure;Lio/github/oyedsamu/caterktor/NetworkError;JILjava/lang/String;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAttempts ()I
+	public final fun getDurationMs ()J
+	public final fun getError ()Lio/github/oyedsamu/caterktor/NetworkError;
+	public final fun getRequestId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkResult$Success : io/github/oyedsamu/caterktor/NetworkResult {
+	public synthetic fun <init> (Ljava/lang/Object;ILio/github/oyedsamu/caterktor/Headers;JILjava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2-ob9oPJY ()I
+	public final fun component3 ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun component4 ()J
+	public final fun component5 ()I
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy-TbUMEWQ (Ljava/lang/Object;ILio/github/oyedsamu/caterktor/Headers;JILjava/lang/String;)Lio/github/oyedsamu/caterktor/NetworkResult$Success;
+	public static synthetic fun copy-TbUMEWQ$default (Lio/github/oyedsamu/caterktor/NetworkResult$Success;Ljava/lang/Object;ILio/github/oyedsamu/caterktor/Headers;JILjava/lang/String;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAttempts ()I
+	public final fun getBody ()Ljava/lang/Object;
+	public final fun getDurationMs ()J
+	public final fun getHeaders ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun getRequestId ()Ljava/lang/String;
+	public final fun getStatus-ob9oPJY ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkResultException : java/lang/Exception {
+	public fun <init> (Lio/github/oyedsamu/caterktor/NetworkError;Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/NetworkError;Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getError ()Lio/github/oyedsamu/caterktor/NetworkError;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkResultExtensionsKt {
+	public static final fun errorOrNull (Lio/github/oyedsamu/caterktor/NetworkResult;)Lio/github/oyedsamu/caterktor/NetworkError;
+	public static final fun fold (Lio/github/oyedsamu/caterktor/NetworkResult;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun getOrNull (Lio/github/oyedsamu/caterktor/NetworkResult;)Ljava/lang/Object;
+	public static final fun getOrThrow (Lio/github/oyedsamu/caterktor/NetworkResult;)Ljava/lang/Object;
+	public static final fun map (Lio/github/oyedsamu/caterktor/NetworkResult;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/NetworkResult;
+	public static final fun onFailure (Lio/github/oyedsamu/caterktor/NetworkResult;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/NetworkResult;
+	public static final fun onSuccess (Lio/github/oyedsamu/caterktor/NetworkResult;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/NetworkResult;
+	public static final fun toKotlinResult (Lio/github/oyedsamu/caterktor/NetworkResult;)Ljava/lang/Object;
+}
+
+public final class io/github/oyedsamu/caterktor/RawBody {
+	public fun <init> ([BLjava/lang/String;)V
+	public final fun asString (Ljava/lang/String;)Ljava/lang/String;
+	public static synthetic fun asString$default (Lio/github/oyedsamu/caterktor/RawBody;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBytes ()[B
+	public final fun getContentType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/oyedsamu/caterktor/RequestBody {
+}
+
+public final class io/github/oyedsamu/caterktor/SerializationPhase : java/lang/Enum {
+	public static final field Decoding Lio/github/oyedsamu/caterktor/SerializationPhase;
+	public static final field Encoding Lio/github/oyedsamu/caterktor/SerializationPhase;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/SerializationPhase;
+	public static fun values ()[Lio/github/oyedsamu/caterktor/SerializationPhase;
+}
+
+public final class io/github/oyedsamu/caterktor/TimeoutKind : java/lang/Enum {
+	public static final field Connect Lio/github/oyedsamu/caterktor/TimeoutKind;
+	public static final field Deadline Lio/github/oyedsamu/caterktor/TimeoutKind;
+	public static final field Request Lio/github/oyedsamu/caterktor/TimeoutKind;
+	public static final field Socket Lio/github/oyedsamu/caterktor/TimeoutKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/TimeoutKind;
+	public static fun values ()[Lio/github/oyedsamu/caterktor/TimeoutKind;
+}
+
