@@ -1,80 +1,25 @@
 plugins {
-    kotlin("multiplatform") version "2.3.0"
-    kotlin("plugin.serialization") version "2.3.0"
-    id("com.android.kotlin.multiplatform.library") version "8.13.2"
-    id("maven-publish")
+    // Loaded here (but not applied) to put `KotlinMultiplatformExtension` on
+    // the root project's buildscript classloader. The binary-compatibility
+    // validator plugin, also applied at the root, reaches for that type when
+    // it reacts to subprojects that declare it. Without this line BCV throws
+    // `NoClassDefFoundError: org/jetbrains/kotlin/gradle/dsl/KotlinMultiplatformExtension`
+    // because the Kotlin plugin is isolated in the subproject classloader.
+    alias(libs.plugins.kotlin.multiplatform) apply false
+
+    alias(libs.plugins.binary.compatibility.validator)
 }
 
-group = "com.byoyedele.caterktor"
-version = "0.1.0-SNAPSHOT"
-
-kotlin {
-    android {
-        namespace = "com.byoyedele.caterktor"
-        compileSdk = 36
-        minSdk = 23
-    }
-    jvm()
-
-    sourceSets {
-        commonMain.dependencies {
-            api("io.ktor:ktor-client-core:3.4.0")
-            api("io.ktor:ktor-http:3.4.0")
-            api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
-        }
-        commonTest.dependencies {
-            implementation(kotlin("test"))
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
-            implementation("io.ktor:ktor-client-mock:3.4.0")
-        }
-        androidMain.dependencies {
-            implementation("io.ktor:ktor-client-okhttp:3.4.0")
-        }
-    }
+allprojects {
+    group = "io.github.oyedsamu"
+    version = "0.1.0-SNAPSHOT"
 }
 
-publishing {
-    publications.withType<MavenPublication>().configureEach {
-        pom {
-            name.set("CaterKtor")
-            description.set("A small Kotlin networking abstraction backed by Ktor.")
-            url.set("https://github.com/byoyedele/caterktor")
-            licenses {
-                license {
-                    name.set("The Apache License, Version 2.0")
-                    url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                }
-            }
-            developers {
-                developer {
-                    id.set("byoyedele")
-                    name.set("Bolaji Oyedele")
-                }
-            }
-            scm {
-                connection.set("scm:git:https://github.com/byoyedele/caterktor.git")
-                developerConnection.set("scm:git:ssh://git@github.com/byoyedele/caterktor.git")
-                url.set("https://github.com/byoyedele/caterktor")
-            }
-        }
-    }
-
-    repositories {
-        maven {
-            name = "internal"
-            url = uri(
-                providers.gradleProperty("publishingUrl")
-                    .orElse(providers.environmentVariable("PUBLISHING_URL"))
-                    .orElse(layout.buildDirectory.dir("repo").map { it.asFile.absolutePath })
-            )
-            credentials {
-                username = providers.gradleProperty("publishingUsername")
-                    .orElse(providers.environmentVariable("PUBLISHING_USERNAME"))
-                    .orNull
-                password = providers.gradleProperty("publishingPassword")
-                    .orElse(providers.environmentVariable("PUBLISHING_PASSWORD"))
-                    .orNull
-            }
-        }
-    }
+apiValidation {
+    // When the Core Pipeline Engineer introduces
+    // `io.github.oyedsamu.caterktor.ExperimentalCaterktor`, BCV will honor it
+    // as a non-public marker and exclude annotated surfaces from the public dump.
+    // BCV tolerates missing markers at config time — they are resolved when
+    // `apiCheck` actually runs.
+    nonPublicMarkers += "io.github.oyedsamu.caterktor.ExperimentalCaterktor"
 }

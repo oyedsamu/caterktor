@@ -5,6 +5,7 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.10.0"
 }
@@ -18,3 +19,19 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "caterktor"
+
+includeBuild("build-logic")
+
+include(
+    ":caterktor-core",
+    ":caterktor-serialization-json",
+    ":caterktor-serialization-protobuf",
+    ":caterktor-engine-okhttp",
+    ":caterktor-engine-darwin",
+    ":caterktor-engine-cio",
+    ":caterktor-logging",
+    ":caterktor-otel",
+    ":caterktor-auth",
+    ":caterktor-testing",
+    ":caterktor-ktorfit",
+)
