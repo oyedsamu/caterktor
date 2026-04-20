@@ -42,7 +42,7 @@ class HttpMethodTest {
 
     @Test
     fun allValues_coverExpectedMethods() {
-        val values = HttpMethod.values().toSet()
+        val values = HttpMethod.entries.toSet()
         assertTrue(HttpMethod.GET in values)
         assertTrue(HttpMethod.HEAD in values)
         assertTrue(HttpMethod.POST in values)
