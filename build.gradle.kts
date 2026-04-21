@@ -16,10 +16,9 @@ allprojects {
 }
 
 apiValidation {
-    // When the Core Pipeline Engineer introduces
-    // `io.github.oyedsamu.caterktor.ExperimentalCaterktor`, BCV will honor it
-    // as a non-public marker and exclude annotated surfaces from the public dump.
-    // BCV tolerates missing markers at config time — they are resolved when
-    // `apiCheck` actually runs.
-    nonPublicMarkers += "io.github.oyedsamu.caterktor.ExperimentalCaterktor"
+    // @ExperimentalCaterktor types are exempt from the two-minor deprecation
+    // window but they STILL appear in the API dump — see CONTRIBUTING.md.
+    // Do NOT add ExperimentalCaterktor to nonPublicMarkers; doing so silently
+    // drops the entire experimental surface from apiCheck, defeating BCV's
+    // purpose for the bulk of the Wave 4–8 API.
 }
