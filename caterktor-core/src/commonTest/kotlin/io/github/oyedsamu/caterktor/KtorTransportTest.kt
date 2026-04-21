@@ -5,6 +5,7 @@ package io.github.oyedsamu.caterktor
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.io.IOException
@@ -92,26 +93,32 @@ class KtorTransportTest {
     }
 
     @Test
-    fun non_null_body_throws_unsupported_operation_exception() = runTest {
-        val engine = MockEngine { _ ->
-            respond(content = byteArrayOf(), status = HttpStatusCode.OK)
+    fun bytes_body_is_sent_with_content_type_header() = runTest {
+        var seenBody: ByteArray? = null
+        var seenContentType: String? = null
+        val engine = MockEngine { request ->
+            seenBody = request.body.toByteArray()
+            seenContentType = request.body.contentType?.toString()
+                ?: request.headers["Content-Type"]
+            respond(content = byteArrayOf(), status = HttpStatusCode.Created)
         }
         val transport = KtorTransport(HttpClient(engine))
 
-        val stubBody = UnsupportedRequestBody
+        val payload = """{"x":1}""".encodeToByteArray()
+        val response = transport.execute(
+            NetworkRequest(
+                method = HttpMethod.POST,
+                url = "https://example.test/",
+                body = RequestBody.Bytes(payload, "application/json"),
+            ),
+        )
 
-        val thrown = assertFailsWith<NetworkErrorException> {
-            transport.execute(
-                NetworkRequest(
-                    method = HttpMethod.POST,
-                    url = "https://example.test/",
-                    body = stubBody,
-                ),
-            )
-        }
-        val cause = thrown.cause
-        assertIs<UnsupportedOperationException>(cause)
-        assertTrue(cause.message.orEmpty().contains("non-null RequestBody"))
+        assertEquals(HttpStatus.Created, response.status)
+        assertContentEquals(payload, seenBody)
+        assertTrue(
+            seenContentType.orEmpty().contains("application/json"),
+            "expected Content-Type to contain application/json, got: $seenContentType",
+        )
     }
 
     @Test

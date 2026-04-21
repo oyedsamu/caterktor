@@ -1,0 +1,5 @@
+public final class io/github/oyedsamu/caterktor/engine/cio/CioTransportKt {
+	public static final fun CioTransport (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/KtorTransport;
+	public static synthetic fun CioTransport$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/KtorTransport;
+}
+

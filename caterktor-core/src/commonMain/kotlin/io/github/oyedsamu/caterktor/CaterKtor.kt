@@ -48,6 +48,7 @@ public annotation class CaterKtorDsl
 public class CaterKtorBuilder internal constructor() {
 
     private val _interceptors: MutableList<Interceptor> = mutableListOf()
+    private val _converters: MutableList<BodyConverter> = mutableListOf()
 
     /**
      * The terminal transport. Must be set before [build] is invoked, either
@@ -57,15 +58,38 @@ public class CaterKtorBuilder internal constructor() {
     public var transport: Transport? = null
 
     /**
+     * The base URL for all relative-path requests issued through the typed
+     * call helpers (`get`, `post`, …).
+     *
+     * - If `null`, every call must use an absolute URL.
+     * - If set, relative paths are resolved against this URL per the rules in
+     *   the URL resolver (see `resolveUrl`).
+     */
+    public var baseUrl: String? = null
+
+    /**
      * Append [interceptor] to the pipeline. Returns this builder for chaining.
      */
     public fun addInterceptor(interceptor: Interceptor): CaterKtorBuilder = apply {
         _interceptors += interceptor
     }
 
+    /**
+     * Register a [BodyConverter]. Converters are tried in registration order;
+     * the first whose [BodyConverter.supports] returns `true` for a given
+     * content-type wins. Returns this builder for chaining.
+     */
+    public fun addConverter(converter: BodyConverter): CaterKtorBuilder = apply {
+        _converters += converter
+    }
+
     /** Snapshot of currently registered interceptors, in pipeline order. */
     public val interceptors: List<Interceptor>
         get() = _interceptors.toList()
+
+    /** Snapshot of currently registered body converters, in registration order. */
+    public val converters: List<BodyConverter>
+        get() = _converters.toList()
 
     internal fun build(): NetworkClient {
         val t = checkNotNull(transport) {
@@ -75,6 +99,8 @@ public class CaterKtorBuilder internal constructor() {
         return NetworkClient(
             transport = t,
             interceptors = _interceptors.toList(),
+            converters = _converters.toList(),
+            baseUrl = baseUrl,
         )
     }
 }

@@ -1,9 +1,12 @@
 package io.github.oyedsamu.caterktor
 
 import io.ktor.client.HttpClient
+import io.ktor.client.request.header
 import io.ktor.client.request.request
+import io.ktor.client.request.setBody
 import io.ktor.client.request.url
 import io.ktor.client.statement.readRawBytes
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod as KtorHttpMethod
 
 /**
@@ -24,9 +27,9 @@ import io.ktor.http.HttpMethod as KtorHttpMethod
  *
  * ## Body support
  *
- * The non-null [RequestBody] path is not yet implemented; issuing a request
- * with a body throws [UnsupportedOperationException]. Streaming body support
- * arrives in Wave B1.
+ * [RequestBody.Bytes] is supported: the bytes are passed to the engine and
+ * the `Content-Type` header is set from the body. Streaming body support
+ * (sources, multipart, forms) arrives in Wave B1.
  *
  * @property httpClient The caller-supplied Ktor client. The exact instance
  *   passed in is retained so that callers can reference it for diagnostics;
@@ -46,19 +49,19 @@ public class KtorTransport(
     private val client: HttpClient = httpClient.config { expectSuccess = false }
 
     override suspend fun execute(request: NetworkRequest): NetworkResponse = mapKtorErrors {
-        if (request.body != null) {
-            throw UnsupportedOperationException(
-                "KtorTransport does not yet handle non-null RequestBody. " +
-                    "Awaiting B1 (streaming bodies) implementation.",
-            )
-        }
-
         val ktorResponse = client.request {
             method = KtorHttpMethod(request.method.name)
             url(request.url)
             for (name in request.headers.names) {
                 for (value in request.headers.getAll(name)) {
                     headers.append(name, value)
+                }
+            }
+            when (val body = request.body) {
+                null -> { /* no body, nothing to set */ }
+                is RequestBody.Bytes -> {
+                    setBody(body.bytes)
+                    header(HttpHeaders.ContentType, body.contentType)
                 }
             }
         }

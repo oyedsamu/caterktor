@@ -5,9 +5,13 @@ public abstract interface class io/github/oyedsamu/caterktor/BodyConverter {
 }
 
 public final class io/github/oyedsamu/caterktor/CaterKtorBuilder {
+	public final fun addConverter (Lio/github/oyedsamu/caterktor/BodyConverter;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun addInterceptor (Lio/github/oyedsamu/caterktor/Interceptor;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
+	public final fun getBaseUrl ()Ljava/lang/String;
+	public final fun getConverters ()Ljava/util/List;
 	public final fun getInterceptors ()Ljava/util/List;
 	public final fun getTransport ()Lio/github/oyedsamu/caterktor/Transport;
+	public final fun setBaseUrl (Ljava/lang/String;)V
 	public final fun setTransport (Lio/github/oyedsamu/caterktor/Transport;)V
 }
 
@@ -151,6 +155,18 @@ public final class io/github/oyedsamu/caterktor/NetworkClient {
 	public final fun describePipeline ()Ljava/util/List;
 	public final fun execute (Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun execute$default (Lio/github/oyedsamu/caterktor/NetworkClient;Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun getBaseUrl ()Ljava/lang/String;
+	public final fun getConverters ()Ljava/util/List;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkClientExtensionsKt {
+	public static final fun callWithBody (Lio/github/oyedsamu/caterktor/NetworkClient;Ljava/lang/String;Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/Object;Lkotlin/reflect/KType;Lkotlin/reflect/KType;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Ljava/util/Map;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkClientKt {
+	public static final fun call (Lio/github/oyedsamu/caterktor/NetworkClient;Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/reflect/KType;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun call$default (Lio/github/oyedsamu/caterktor/NetworkClient;Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/reflect/KType;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static final fun generateRequestId ()Ljava/lang/String;
 }
 
 public abstract interface class io/github/oyedsamu/caterktor/NetworkError {
@@ -359,6 +375,12 @@ public final class io/github/oyedsamu/caterktor/RawBody {
 public abstract interface class io/github/oyedsamu/caterktor/RequestBody {
 }
 
+public final class io/github/oyedsamu/caterktor/RequestBody$Bytes : io/github/oyedsamu/caterktor/RequestBody {
+	public fun <init> ([BLjava/lang/String;)V
+	public final fun getBytes ()[B
+	public final fun getContentType ()Ljava/lang/String;
+}
+
 public final class io/github/oyedsamu/caterktor/SerializationPhase : java/lang/Enum {
 	public static final field Decoding Lio/github/oyedsamu/caterktor/SerializationPhase;
 	public static final field Encoding Lio/github/oyedsamu/caterktor/SerializationPhase;
@@ -379,5 +401,10 @@ public final class io/github/oyedsamu/caterktor/TimeoutKind : java/lang/Enum {
 
 public abstract interface class io/github/oyedsamu/caterktor/Transport {
 	public abstract fun execute (Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/oyedsamu/caterktor/UrlResolverKt {
+	public static final fun expandPathTemplate (Ljava/lang/String;Ljava/util/Map;)Ljava/lang/String;
+	public static final fun resolveUrl (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 }
 

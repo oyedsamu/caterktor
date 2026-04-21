@@ -2,20 +2,27 @@ package io.github.oyedsamu.caterktor
 
 /**
  * Marker for request body types. Concrete implementations are provided in
- * caterktor-core once the streaming body model is finalised (B1).
+ * caterktor-core; the full hierarchy (Text, Source, Multipart, Form) lands
+ * alongside the streaming body model in Wave B1.
  *
- * The full hierarchy ([Json][io.github.oyedsamu.caterktor.RequestBody], Text, Bytes,
- * Source, Multipart, Form) is defined in §6.6 of the PRD and will be added in the
- * B-stream once the streaming primitives land.
+ * At this stage the only concrete variant is [Bytes] — an already-encoded
+ * byte array, emitted by the typed call helpers after a [BodyConverter]
+ * has run.
  */
-public sealed interface RequestBody
+public sealed interface RequestBody {
 
-/**
- * Internal sentinel implementation used by tests and by the transport's
- * "body not yet supported" assertion path.
- *
- * Internal to the module and not part of the public API. Will be
- * replaced by the full Json/Text/Bytes/Source/Multipart/Form hierarchy
- * in Wave B1.
- */
-internal object UnsupportedRequestBody : RequestBody
+    /**
+     * A pre-encoded byte-array body.
+     *
+     * Created automatically by the typed call helpers when a [BodyConverter]
+     * encodes the request value. Do not construct manually unless you have
+     * already-encoded bytes and want to bypass converter selection.
+     *
+     * @property bytes The encoded content.
+     * @property contentType The MIME type, e.g. `"application/json"`.
+     */
+    public class Bytes(
+        public val bytes: ByteArray,
+        public val contentType: String,
+    ) : RequestBody
+}
