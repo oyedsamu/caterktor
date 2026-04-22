@@ -1,3 +1,32 @@
+public final class io/github/oyedsamu/caterktor/AttributeKey {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getName ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/Attributes {
+	public static final field Companion Lio/github/oyedsamu/caterktor/Attributes$Companion;
+	public final fun contains (Lio/github/oyedsamu/caterktor/AttributeKey;)Z
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getOrNull (Lio/github/oyedsamu/caterktor/AttributeKey;)Ljava/lang/Object;
+	public fun hashCode ()I
+	public final fun isEmpty ()Z
+	public final fun plus (Lio/github/oyedsamu/caterktor/Attributes;)Lio/github/oyedsamu/caterktor/Attributes;
+	public final fun require (Lio/github/oyedsamu/caterktor/AttributeKey;)Ljava/lang/Object;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/Attributes$Companion {
+	public final fun getEmpty ()Lio/github/oyedsamu/caterktor/Attributes;
+	public final fun invoke (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/Attributes;
+	public static synthetic fun invoke$default (Lio/github/oyedsamu/caterktor/Attributes$Companion;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/Attributes;
+}
+
+public final class io/github/oyedsamu/caterktor/AttributesBuilder {
+	public final fun put (Lio/github/oyedsamu/caterktor/AttributeKey;Ljava/lang/Object;)Lio/github/oyedsamu/caterktor/AttributesBuilder;
+	public final fun remove (Lio/github/oyedsamu/caterktor/AttributeKey;)Lio/github/oyedsamu/caterktor/AttributesBuilder;
+}
+
 public abstract interface class io/github/oyedsamu/caterktor/BodyConverter {
 	public abstract fun decode (Lio/github/oyedsamu/caterktor/RawBody;Lkotlin/reflect/KType;)Ljava/lang/Object;
 	public abstract fun encode (Ljava/lang/Object;Lkotlin/reflect/KType;Ljava/lang/String;)[B
@@ -32,10 +61,10 @@ public abstract interface annotation class io/github/oyedsamu/caterktor/CaterKto
 }
 
 public final class io/github/oyedsamu/caterktor/CaterKtorKeys {
-	public static final field ENVELOPER Ljava/lang/String;
 	public static final field INSTANCE Lio/github/oyedsamu/caterktor/CaterKtorKeys;
-	public static final field SKIP_AUTH Ljava/lang/String;
-	public static final field UNWRAPPER Ljava/lang/String;
+	public final fun getENVELOPER ()Lio/github/oyedsamu/caterktor/AttributeKey;
+	public final fun getSKIP_AUTH ()Lio/github/oyedsamu/caterktor/AttributeKey;
+	public final fun getUNWRAPPER ()Lio/github/oyedsamu/caterktor/AttributeKey;
 }
 
 public final class io/github/oyedsamu/caterktor/CaterKtorKt {
@@ -287,7 +316,7 @@ public final class io/github/oyedsamu/caterktor/NetworkClient {
 }
 
 public final class io/github/oyedsamu/caterktor/NetworkClientExtensionsKt {
-	public static final fun callWithBody (Lio/github/oyedsamu/caterktor/NetworkClient;Ljava/lang/String;Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/Object;Lkotlin/reflect/KType;Lkotlin/reflect/KType;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Ljava/util/Map;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun callWithBody (Lio/github/oyedsamu/caterktor/NetworkClient;Ljava/lang/String;Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/Object;Lkotlin/reflect/KType;Lkotlin/reflect/KType;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/Attributes;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/github/oyedsamu/caterktor/NetworkClientKt {
@@ -497,27 +526,27 @@ public final class io/github/oyedsamu/caterktor/NetworkEvent$ResponseReceived : 
 
 public final class io/github/oyedsamu/caterktor/NetworkRequest {
 	public static final field Companion Lio/github/oyedsamu/caterktor/NetworkRequest$Companion;
-	public fun <init> (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/util/Map;)V
+	public fun <init> (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Lio/github/oyedsamu/caterktor/Attributes;)V
 	public final fun component1 ()Lio/github/oyedsamu/caterktor/HttpMethod;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lio/github/oyedsamu/caterktor/Headers;
 	public final fun component4 ()Lio/github/oyedsamu/caterktor/RequestBody;
-	public final fun component5 ()Ljava/util/Map;
-	public final fun copy (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/util/Map;)Lio/github/oyedsamu/caterktor/NetworkRequest;
-	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkRequest;Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/util/Map;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkRequest;
+	public final fun component5 ()Lio/github/oyedsamu/caterktor/Attributes;
+	public final fun copy (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Lio/github/oyedsamu/caterktor/Attributes;)Lio/github/oyedsamu/caterktor/NetworkRequest;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkRequest;Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Lio/github/oyedsamu/caterktor/Attributes;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAttributes ()Lio/github/oyedsamu/caterktor/Attributes;
 	public final fun getBody ()Lio/github/oyedsamu/caterktor/RequestBody;
 	public final fun getHeaders ()Lio/github/oyedsamu/caterktor/Headers;
 	public final fun getMethod ()Lio/github/oyedsamu/caterktor/HttpMethod;
-	public final fun getTags ()Ljava/util/Map;
 	public final fun getUrl ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/github/oyedsamu/caterktor/NetworkRequest$Companion {
-	public final fun invoke (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/util/Map;)Lio/github/oyedsamu/caterktor/NetworkRequest;
-	public static synthetic fun invoke$default (Lio/github/oyedsamu/caterktor/NetworkRequest$Companion;Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/util/Map;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkRequest;
+	public final fun invoke (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Lio/github/oyedsamu/caterktor/Attributes;)Lio/github/oyedsamu/caterktor/NetworkRequest;
+	public static synthetic fun invoke$default (Lio/github/oyedsamu/caterktor/NetworkRequest$Companion;Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;Lio/github/oyedsamu/caterktor/Attributes;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkRequest;
 }
 
 public final class io/github/oyedsamu/caterktor/NetworkResponse {

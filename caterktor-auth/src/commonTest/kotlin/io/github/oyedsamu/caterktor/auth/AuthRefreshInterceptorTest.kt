@@ -2,6 +2,7 @@
 
 package io.github.oyedsamu.caterktor.auth
 
+import io.github.oyedsamu.caterktor.Attributes
 import io.github.oyedsamu.caterktor.CaterKtor
 import io.github.oyedsamu.caterktor.CaterKtorKeys
 import io.github.oyedsamu.caterktor.ExperimentalCaterktor
@@ -206,7 +207,7 @@ class AuthRefreshInterceptorTest {
 
         val result = client.get<Unit>(
             url = "https://example.test/refresh",
-            tags = mapOf(CaterKtorKeys.SKIP_AUTH to true),
+            attributes = Attributes { put(CaterKtorKeys.SKIP_AUTH, true) },
         )
 
         assertIs<NetworkResult.Failure>(result)

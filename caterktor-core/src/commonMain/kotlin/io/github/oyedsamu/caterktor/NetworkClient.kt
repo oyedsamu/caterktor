@@ -172,7 +172,7 @@ internal suspend fun <T : Any> NetworkClient.call(
     tryEmitEvent(NetworkEvent.CallStart(requestId, requestForCall))
 
     val unwrapper: ResponseUnwrapper? =
-        (requestForCall.tags[CaterKtorKeys.UNWRAPPER] as? ResponseUnwrapper) ?: defaultUnwrapper
+        requestForCall.attributes.getOrNull(CaterKtorKeys.UNWRAPPER) ?: defaultUnwrapper
 
     val callState = CallExecutionState()
     return try {
@@ -316,6 +316,7 @@ internal fun generateRequestId(): String = buildString(32) {
     repeat(4) { append(Random.nextLong().toULong().toString(16).padStart(16, '0')) }
 }
 
+@OptIn(ExperimentalCaterktor::class)
 private fun NetworkRequest.withContentNegotiationAccept(acceptHeader: String?): NetworkRequest {
     if (acceptHeader == null || "Accept" in headers) return this
     return copy(headers = headers + Headers { set("Accept", acceptHeader) })

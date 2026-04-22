@@ -12,7 +12,7 @@ package io.github.oyedsamu.caterktor
  * - `DataFieldEnveloper` (in `caterktor-serialization-json`) — wraps the payload in `{ "field": <payload> }`
  *
  * ## Per-request override
- * Attach an instance via `tags = mapOf(CaterKtorKeys.ENVELOPER to myEnveloper)` on any call.
+ * Attach an instance via `attributes = Attributes { put(CaterKtorKeys.ENVELOPER, myEnveloper) }` on any call.
  * The per-request value takes precedence over the per-client default in [CaterKtorBuilder].
  *
  * ## Thread safety

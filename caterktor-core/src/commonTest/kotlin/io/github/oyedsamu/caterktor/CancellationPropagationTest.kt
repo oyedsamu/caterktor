@@ -46,17 +46,20 @@ class CancellationPropagationTest {
         val thrown = assertFailsWith<CancellationException> {
             client.get<String>(
                 url = "https://example.test/cancel",
-                tags = mapOf(
-                    CaterKtorKeys.UNWRAPPER to object : ResponseUnwrapper {
-                        override fun unwrap(
-                            raw: ByteArray,
-                            contentType: String?,
-                            response: NetworkResponse,
-                        ): ByteArray {
-                            throw sentinel
-                        }
-                    },
-                ),
+                attributes = Attributes {
+                    put(
+                        CaterKtorKeys.UNWRAPPER,
+                        object : ResponseUnwrapper {
+                            override fun unwrap(
+                                raw: ByteArray,
+                                contentType: String?,
+                                response: NetworkResponse,
+                            ): ByteArray {
+                                throw sentinel
+                            }
+                        },
+                    )
+                },
             )
         }
         assertSame(sentinel, thrown)
@@ -109,13 +112,16 @@ class CancellationPropagationTest {
             client.post<Unit, String>(
                 url = "https://example.test/cancel",
                 body = "payload",
-                tags = mapOf(
-                    CaterKtorKeys.ENVELOPER to object : RequestEnveloper {
-                        override fun envelop(encoded: ByteArray, contentType: String): RequestBody {
-                            throw sentinel
-                        }
-                    },
-                ),
+                attributes = Attributes {
+                    put(
+                        CaterKtorKeys.ENVELOPER,
+                        object : RequestEnveloper {
+                            override fun envelop(encoded: ByteArray, contentType: String): RequestBody {
+                                throw sentinel
+                            }
+                        },
+                    )
+                },
             )
         }
         assertSame(sentinel, thrown)

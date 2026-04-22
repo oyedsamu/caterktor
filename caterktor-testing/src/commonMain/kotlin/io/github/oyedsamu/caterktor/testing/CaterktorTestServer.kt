@@ -78,6 +78,7 @@ private fun String.normalizePath(): String {
     return path.ifEmpty { "/" }
 }
 
+@OptIn(ExperimentalCaterktor::class)
 private fun NetworkRequest.pathRelativeTo(baseUrl: String): String {
     val withoutBase = if (url.startsWith(baseUrl)) url.removePrefix(baseUrl) else url
     return withoutBase.normalizePath()

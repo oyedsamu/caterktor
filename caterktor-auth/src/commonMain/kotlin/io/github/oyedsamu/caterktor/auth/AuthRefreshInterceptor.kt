@@ -69,8 +69,8 @@ public class AuthRefreshBudgetExceededException(
  * A caller cancelled while waiting does not cancel the shared refresh for other
  * callers.
  *
- * Requests tagged with `CaterKtorKeys.SKIP_AUTH = true` bypass both token
- * injection and refresh handling, which is the required tag for refresh calls
+ * Requests with `CaterKtorKeys.SKIP_AUTH = true` in their attributes bypass both token
+ * injection and refresh handling, which is the required attribute for refresh calls
  * issued through the same [io.github.oyedsamu.caterktor.NetworkClient].
  *
  * Requests that already contain an `Authorization` header are treated as
@@ -102,7 +102,7 @@ public class AuthRefreshInterceptor(
 
     override suspend fun intercept(chain: Chain): NetworkResponse {
         val originalRequest = chain.request
-        if (originalRequest.tags[CaterKtorKeys.SKIP_AUTH] == true) {
+        if (originalRequest.attributes.getOrNull(CaterKtorKeys.SKIP_AUTH) == true) {
             return chain.proceed(originalRequest)
         }
 

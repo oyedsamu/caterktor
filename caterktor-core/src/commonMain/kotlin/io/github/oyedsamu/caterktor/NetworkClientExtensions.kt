@@ -15,7 +15,7 @@ import kotlin.time.Instant
  * @param pathParams Template parameters to expand in [url], e.g. `mapOf("id" to "42")` for
  *   a [url] of `"users/{id}"`.
  * @param headers Additional request headers. Merged with any headers added by interceptors.
- * @param tags Interceptor communication bag; values must be immutable.
+ * @param attributes Typed interceptor communication bag.
  * @param deadline Optional wall-clock deadline for the entire logical request.
  */
 @ExperimentalCaterktor
@@ -23,11 +23,11 @@ public suspend inline fun <reified T : Any> NetworkClient.get(
     url: String,
     pathParams: Map<String, Any> = emptyMap(),
     headers: Headers = Headers.Empty,
-    tags: Map<String, Any> = emptyMap(),
+    attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
     val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
-    val request = NetworkRequest(HttpMethod.GET, resolvedUrl, headers, null, tags)
+    val request = NetworkRequest(HttpMethod.GET, resolvedUrl, headers, null, attributes)
     return call(request, typeOf<T>(), deadline)
 }
 
@@ -42,11 +42,11 @@ public suspend inline fun <reified T : Any> NetworkClient.head(
     url: String,
     pathParams: Map<String, Any> = emptyMap(),
     headers: Headers = Headers.Empty,
-    tags: Map<String, Any> = emptyMap(),
+    attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
     val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
-    val request = NetworkRequest(HttpMethod.HEAD, resolvedUrl, headers, null, tags)
+    val request = NetworkRequest(HttpMethod.HEAD, resolvedUrl, headers, null, attributes)
     return call(request, typeOf<T>(), deadline)
 }
 
@@ -60,11 +60,11 @@ public suspend inline fun <reified T : Any> NetworkClient.delete(
     url: String,
     pathParams: Map<String, Any> = emptyMap(),
     headers: Headers = Headers.Empty,
-    tags: Map<String, Any> = emptyMap(),
+    attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
     val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
-    val request = NetworkRequest(HttpMethod.DELETE, resolvedUrl, headers, null, tags)
+    val request = NetworkRequest(HttpMethod.DELETE, resolvedUrl, headers, null, attributes)
     return call(request, typeOf<T>(), deadline)
 }
 
@@ -79,7 +79,7 @@ public suspend inline fun <reified T : Any> NetworkClient.delete(
  * @param url Absolute URL or relative path (resolved against [NetworkClient]'s base URL).
  * @param pathParams Template parameters to expand in [url].
  * @param headers Additional request headers.
- * @param tags Interceptor communication bag; values must be immutable.
+ * @param attributes Typed interceptor communication bag.
  * @param deadline Optional wall-clock deadline for the entire logical request.
  */
 @ExperimentalCaterktor
@@ -89,7 +89,7 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.post(
     contentType: String = "application/json",
     pathParams: Map<String, Any> = emptyMap(),
     headers: Headers = Headers.Empty,
-    tags: Map<String, Any> = emptyMap(),
+    attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
     val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
@@ -101,7 +101,7 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.post(
         responseType = typeOf<T>(),
         contentType = contentType,
         headers = headers,
-        tags = tags,
+        attributes = attributes,
         deadline = deadline,
     )
 }
@@ -114,7 +114,7 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.put(
     contentType: String = "application/json",
     pathParams: Map<String, Any> = emptyMap(),
     headers: Headers = Headers.Empty,
-    tags: Map<String, Any> = emptyMap(),
+    attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
     val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
@@ -126,7 +126,7 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.put(
         responseType = typeOf<T>(),
         contentType = contentType,
         headers = headers,
-        tags = tags,
+        attributes = attributes,
         deadline = deadline,
     )
 }
@@ -139,7 +139,7 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.patch
     contentType: String = "application/json",
     pathParams: Map<String, Any> = emptyMap(),
     headers: Headers = Headers.Empty,
-    tags: Map<String, Any> = emptyMap(),
+    attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
     val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
@@ -151,7 +151,7 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.patch
         responseType = typeOf<T>(),
         contentType = contentType,
         headers = headers,
-        tags = tags,
+        attributes = attributes,
         deadline = deadline,
     )
 }
@@ -172,7 +172,7 @@ public suspend fun <T : Any, B : Any> NetworkClient.callWithBody(
     responseType: KType,
     contentType: String,
     headers: Headers,
-    tags: Map<String, Any>,
+    attributes: Attributes,
     deadline: Instant?,
 ): NetworkResult<T> {
     val bareContentType = ContentNegotiationRegistry.bareContentType(contentType) ?: contentType.trim()
@@ -193,9 +193,9 @@ public suspend fun <T : Any, B : Any> NetworkClient.callWithBody(
         )
     val requestBody: RequestBody = try {
         val encodedBytes = converter.encode(body, bodyType, contentType)
-        // Resolve enveloper: per-request tag takes precedence over per-client default
+        // Resolve enveloper: per-request attribute takes precedence over per-client default
         val enveloper: RequestEnveloper? =
-            (tags[CaterKtorKeys.ENVELOPER] as? RequestEnveloper) ?: defaultEnveloper
+            attributes.getOrNull(CaterKtorKeys.ENVELOPER) ?: defaultEnveloper
         enveloper?.envelop(encodedBytes, contentType)
             ?: RequestBody.Bytes(encodedBytes, contentType)
     } catch (e: CancellationException) {
@@ -212,6 +212,6 @@ public suspend fun <T : Any, B : Any> NetworkClient.callWithBody(
             requestId = generateRequestId(),
         )
     }
-    val request = NetworkRequest(method, resolvedUrl, headers, requestBody, tags)
+    val request = NetworkRequest(method, resolvedUrl, headers, requestBody, attributes)
     return call(request, responseType, deadline)
 }

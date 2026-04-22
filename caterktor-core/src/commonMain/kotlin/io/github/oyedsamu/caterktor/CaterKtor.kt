@@ -187,7 +187,7 @@ public class CaterKtorBuilder internal constructor() {
      * Set the default [ResponseUnwrapper] applied to every response decoded by this client.
      *
      * The unwrapper runs after the transport returns raw bytes and before [BodyConverter.decode]
-     * is called. A per-request override via [CaterKtorKeys.UNWRAPPER] in [NetworkRequest.tags]
+     * is called. A per-request override via [CaterKtorKeys.UNWRAPPER] in [NetworkRequest.attributes]
      * takes precedence over this default.
      */
     public fun unwrapper(unwrapper: ResponseUnwrapper): CaterKtorBuilder = apply {
@@ -198,7 +198,7 @@ public class CaterKtorBuilder internal constructor() {
      * Set the default [RequestEnveloper] applied to every request body encoded by this client.
      *
      * The enveloper runs after [BodyConverter.encode] produces bytes and before [RequestBody]
-     * is built. A per-request override via [CaterKtorKeys.ENVELOPER] in [NetworkRequest.tags]
+     * is built. A per-request override via [CaterKtorKeys.ENVELOPER] in [NetworkRequest.attributes]
      * takes precedence over this default.
      */
     public fun enveloper(enveloper: RequestEnveloper): CaterKtorBuilder = apply {

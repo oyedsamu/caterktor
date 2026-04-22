@@ -19,8 +19,8 @@ import io.github.oyedsamu.caterktor.NetworkResponse
  * (per-request header wins).
  *
  * The header is **not added** if the request carries `CaterKtorKeys.SKIP_AUTH = true` in its
- * tags — this prevents infinite loops when an auth-refresh interceptor issues its own
- * unauthenticated request through the same client.
+ * [io.github.oyedsamu.caterktor.NetworkRequest.attributes] — this prevents infinite loops when
+ * an auth-refresh interceptor issues its own unauthenticated request through the same client.
  *
  * For non-refreshing auth, register this interceptor after retry if you need a
  * fresh token lookup for each retry attempt. For 401 refresh flows, prefer
@@ -49,7 +49,7 @@ public class BearerAuthInterceptor(
         val request = chain.request
 
         // Honour explicit skip-auth tag (e.g. set by an auth-refresh interceptor to avoid loops)
-        if (request.tags[CaterKtorKeys.SKIP_AUTH] == true) {
+        if (request.attributes.getOrNull(CaterKtorKeys.SKIP_AUTH) == true) {
             return chain.proceed(request)
         }
 

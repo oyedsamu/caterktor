@@ -13,7 +13,7 @@ package io.github.oyedsamu.caterktor
  * - `PagedUnwrapper` (in `caterktor-serialization-json`) — extracts the items array from a paged JSON response
  *
  * ## Per-request override
- * Attach an instance via `tags = mapOf(CaterKtorKeys.UNWRAPPER to myUnwrapper)` on any call.
+ * Attach an instance via `attributes = Attributes { put(CaterKtorKeys.UNWRAPPER, myUnwrapper) }` on any call.
  * The per-request value takes precedence over the per-client default configured in [CaterKtorBuilder].
  *
  * ## Thread safety
