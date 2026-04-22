@@ -12,10 +12,10 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # JVM: full test suite + API dump validation (fast, runs on every PR)
+  # JVM: full test suite + API dump validation + compiled sample gate
   # ---------------------------------------------------------------------------
   check-jvm:
-    name: JVM tests + API check
+    name: JVM tests + API check + sample
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -33,7 +33,7 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_KEY }}
 
-      - name: Run JVM tests and verify API dumps
+      - name: Run JVM tests, sample gate, and verify API dumps
         run: ./gradlew check apiCheck --stacktrace
 
   # ---------------------------------------------------------------------------

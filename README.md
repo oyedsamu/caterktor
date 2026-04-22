@@ -46,6 +46,10 @@ dependencies {
 
 ## Quick start
 
+The runnable, CI-compiled version of this flow lives in
+`caterktor-sample/src/commonMain/kotlin/io/github/oyedsamu/caterktor/sample/DocsSamples.kt`.
+Run it with `./gradlew :caterktor-sample:jvmRun`.
+
 ```kotlin
 @OptIn(ExperimentalCaterktor::class)
 val client = CaterKtor {
@@ -241,6 +245,10 @@ from the response `Content-Type`, and request body encoding. Use `addConverter()
 only need decoding without `Accept` negotiation.
 
 ## Testing
+
+The sample module is part of the release gate. `./gradlew check` compiles and
+runs `:caterktor-sample:jvmTest` plus the offline executable sample, so public
+README/KDoc examples fail CI when they drift from the real API.
 
 **Unit tests — `FakeNetworkClient`:** queue scripted responses against a real `NetworkClient` backed
 by an in-memory transport. No I/O, no sockets.

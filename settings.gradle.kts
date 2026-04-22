@@ -35,5 +35,6 @@ include(
     ":caterktor-otel",
     ":caterktor-auth",
     ":caterktor-testing",
+    ":caterktor-sample",
     ":caterktor-ktorfit",
 )

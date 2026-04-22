@@ -26,4 +26,5 @@ apiValidation {
     // Do NOT add ExperimentalCaterktor to nonPublicMarkers; doing so silently
     // drops the entire experimental surface from apiCheck, defeating BCV's
     // purpose for the bulk of the Wave 4–8 API.
+    ignoredProjects.add("caterktor-sample")
 }
