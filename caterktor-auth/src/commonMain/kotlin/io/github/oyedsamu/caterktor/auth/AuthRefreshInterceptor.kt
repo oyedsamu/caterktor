@@ -81,18 +81,47 @@ public class AuthRefreshBudgetExceededException(
  * caller-owned and are not modified or refreshed.
  */
 @ExperimentalCaterktor
-public class AuthRefreshInterceptor(
-    public val tokenProvider: suspend () -> String,
-    public val refreshToken: suspend () -> String,
-    public val budget: RefreshBudget = RefreshBudget(),
-    public val onRefreshFailed: suspend (Throwable) -> Unit = {},
-) : PrivilegedInterceptor, CloseableInterceptor {
+public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableInterceptor {
+
+    public val tokenProvider: suspend () -> String
+    public val refreshToken: suspend () -> String
+    public val budget: RefreshBudget
+    public val onRefreshFailed: suspend (Throwable) -> Unit
+    private val currentTimeMillis: () -> Long
 
     private val mutex = Mutex()
     private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var inFlightRefresh: Deferred<RefreshOutcome>? = null
-    private var windowStartMs: Long = 0L
+    private var windowStartMs: Long? = null
+    private var failureNotifiedWindowStartMs: Long? = null
     private var refreshesInWindow: Int = 0
+
+    public constructor(
+        tokenProvider: suspend () -> String,
+        refreshToken: suspend () -> String,
+        budget: RefreshBudget = RefreshBudget(),
+        onRefreshFailed: suspend (Throwable) -> Unit = {},
+    ) : this(
+        tokenProvider = tokenProvider,
+        refreshToken = refreshToken,
+        budget = budget,
+        onRefreshFailed = onRefreshFailed,
+        currentTimeMillis = { Clock.System.now().toEpochMilliseconds() },
+    )
+
+    internal constructor(
+        tokenProvider: suspend () -> String,
+        refreshToken: suspend () -> String,
+        budget: RefreshBudget = RefreshBudget(),
+        onRefreshFailed: suspend (Throwable) -> Unit = {},
+        currentTimeMillis: () -> Long,
+    ) {
+        this.tokenProvider = tokenProvider
+        this.refreshToken = refreshToken
+        this.budget = budget
+        this.onRefreshFailed = onRefreshFailed
+        this.currentTimeMillis = currentTimeMillis
+    }
 
     /**
      * Cancels the internal [refreshScope], terminating any in-flight token refresh.
@@ -163,10 +192,12 @@ public class AuthRefreshInterceptor(
     }
 
     private fun consumeBudget() {
-        val nowMs = Clock.System.now().toEpochMilliseconds()
-        if (windowStartMs == 0L || nowMs - windowStartMs >= budget.windowMs) {
+        val nowMs = currentTimeMillis()
+        val startMs = windowStartMs
+        if (startMs == null || nowMs - startMs >= budget.windowMs) {
             windowStartMs = nowMs
             refreshesInWindow = 0
+            failureNotifiedWindowStartMs = null
         }
         if (refreshesInWindow >= budget.maxRefreshes) {
             throw AuthRefreshBudgetExceededException(budget)
@@ -206,6 +237,7 @@ public class AuthRefreshInterceptor(
     }
 
     private suspend fun notifyRefreshFailed(cause: Throwable) {
+        if (!shouldNotifyRefreshFailed()) return
         try {
             onRefreshFailed(cause)
         } catch (e: CancellationException) {
@@ -215,11 +247,21 @@ public class AuthRefreshInterceptor(
         }
     }
 
+    private suspend fun shouldNotifyRefreshFailed(): Boolean = mutex.withLock {
+        val startMs = windowStartMs ?: currentTimeMillis().also { windowStartMs = it }
+        if (failureNotifiedWindowStartMs == startMs) {
+            false
+        } else {
+            failureNotifiedWindowStartMs = startMs
+            true
+        }
+    }
+
     private fun NetworkRequest.withBearerToken(token: String): NetworkRequest =
         copy(headers = headers + Headers { set("Authorization", "Bearer $token") })
 
     private fun Instant.remainingMs(): Long =
-        (toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds()).coerceAtLeast(0L)
+        (toEpochMilliseconds() - currentTimeMillis()).coerceAtLeast(0L)
 
     private sealed interface RefreshOutcome {
         data class Success(val token: String) : RefreshOutcome
