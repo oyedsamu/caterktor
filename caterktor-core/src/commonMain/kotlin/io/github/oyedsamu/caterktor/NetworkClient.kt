@@ -249,7 +249,7 @@ private fun <T : Any> NetworkClient.decodeResponse(
         ?: return NetworkResult.Failure(
             error = NetworkError.Serialization(
                 phase = SerializationPhase.Decoding,
-                rawBody = response.rawBody(),
+                rawBody = response.body.rawBodyForFailure(maxBodyDecodeBytes, contentTypeHeader),
                 cause = IllegalStateException(
                     "No BodyConverter registered for content-type '$bareContentType'. " +
                         "Register one via CaterKtorBuilder.addConverter().",
@@ -259,29 +259,42 @@ private fun <T : Any> NetworkClient.decodeResponse(
             attempts = attempts,
             requestId = requestId,
         )
-    val contentLength = response.body.contentLength
-    if (contentLength != null && contentLength > maxBodyDecodeBytes) {
+
+    val raw = try {
+        val responseBody: ResponseBody = if (unwrapper != null) {
+            val boundedInput = response.body.buffered(maxBodyDecodeBytes)
+            unwrapper.unwrap(boundedInput, bareContentType.ifEmpty { null }, response)
+        } else {
+            response.body
+        }
+        responseBody.buffered(maxBodyDecodeBytes).rawBody(contentTypeHeader)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: ResponseBodyTooLargeException) {
         return NetworkResult.Failure(
             error = NetworkError.Serialization(
                 phase = SerializationPhase.Decoding,
                 rawBody = null,
-                cause = IllegalStateException(
-                    "Response body ($contentLength bytes) exceeds maxBodyDecodeBytes ($maxBodyDecodeBytes). " +
-                        "Access the raw ResponseBody directly or increase the limit.",
-                ),
+                cause = e,
+            ),
+            durationMs = durationMs,
+            attempts = attempts,
+            requestId = requestId,
+        )
+    } catch (e: Exception) {
+        return NetworkResult.Failure(
+            error = NetworkError.Serialization(
+                phase = SerializationPhase.Decoding,
+                rawBody = null,
+                cause = e,
             ),
             durationMs = durationMs,
             attempts = attempts,
             requestId = requestId,
         )
     }
+
     return try {
-        val responseBody: ResponseBody = if (unwrapper != null) {
-            unwrapper.unwrap(response.body, bareContentType.ifEmpty { null }, response)
-        } else {
-            response.body
-        }
-        val raw = responseBody.rawBody(contentTypeHeader)
         val body = converter.decode<T>(raw, responseType)
         NetworkResult.Success(
             body = body,
@@ -297,7 +310,7 @@ private fun <T : Any> NetworkClient.decodeResponse(
         NetworkResult.Failure(
             error = NetworkError.Serialization(
                 phase = SerializationPhase.Decoding,
-                rawBody = response.rawBody(),
+                rawBody = raw,
                 cause = e,
             ),
             durationMs = durationMs,
@@ -321,3 +334,15 @@ private fun NetworkRequest.withContentNegotiationAccept(acceptHeader: String?): 
     if (acceptHeader == null || "Accept" in headers) return this
     return copy(headers = headers + Headers { set("Accept", acceptHeader) })
 }
+
+private fun ResponseBody.rawBodyForFailure(
+    maxBytes: Int,
+    contentTypeOverride: String?,
+): RawBody? =
+    try {
+        buffered(maxBytes).rawBody(contentTypeOverride)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    }

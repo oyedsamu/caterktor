@@ -4,6 +4,8 @@ import kotlinx.io.Buffer
 import kotlinx.io.Source as IoSource
 import kotlinx.io.readByteArray
 
+private const val RESPONSE_BODY_BUFFER_CHUNK_SIZE: Int = 8 * 1024
+
 /**
  * Raw response body model.
  *
@@ -81,3 +83,59 @@ public sealed interface ResponseBody {
         override fun source(): IoSource = sourceFactory()
     }
 }
+
+/**
+ * Return a replayable in-memory body after reading at most [maxBytes].
+ *
+ * This helper exists for typed decoding, whose current [BodyConverter] contract
+ * still consumes a fully buffered [RawBody]. It bounds unknown-length streaming
+ * bodies by reading one byte past the limit and failing before allocating beyond
+ * the configured budget.
+ *
+ * @throws IllegalStateException if [maxBytes] is negative or this body exceeds [maxBytes].
+ */
+public fun ResponseBody.buffered(maxBytes: Int): ResponseBody.Bytes {
+    require(maxBytes >= 0) { "maxBytes must be >= 0, was $maxBytes" }
+    val maxBytesLong = maxBytes.toLong()
+    val knownContentLength = contentLength
+    if (knownContentLength != null && knownContentLength > maxBytesLong) {
+        throw ResponseBodyTooLargeException(knownContentLength, maxBytes)
+    }
+
+    val opened = source()
+    return try {
+        val sink = Buffer()
+        val chunk = ByteArray(RESPONSE_BODY_BUFFER_CHUNK_SIZE)
+        var totalBytes = 0L
+
+        while (true) {
+            val bytesUntilOverflow = maxBytesLong - totalBytes + 1L
+            if (bytesUntilOverflow <= 0L) {
+                throw ResponseBodyTooLargeException(totalBytes, maxBytes)
+            }
+            val readLimit = minOf(chunk.size.toLong(), bytesUntilOverflow).toInt()
+            val read = opened.readAtMostTo(chunk, 0, readLimit)
+            if (read == -1) break
+            totalBytes += read
+            if (totalBytes > maxBytesLong) {
+                throw ResponseBodyTooLargeException(totalBytes, maxBytes)
+            }
+            sink.write(chunk, 0, read)
+        }
+
+        ResponseBody.Bytes(sink.readByteArray(), contentType)
+    } finally {
+        opened.close()
+    }
+}
+
+internal class ResponseBodyTooLargeException(
+    actualBytes: Long?,
+    maxBytes: Int,
+) : IllegalStateException(
+    if (actualBytes == null) {
+        "Response body exceeds maxBodyDecodeBytes ($maxBytes)."
+    } else {
+        "Response body ($actualBytes bytes) exceeds maxBodyDecodeBytes ($maxBytes)."
+    },
+)

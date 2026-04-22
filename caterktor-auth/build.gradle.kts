@@ -8,6 +8,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(project(":caterktor-core"))
+            implementation(libs.kotlinx.coroutines.core)
         }
     }
 }

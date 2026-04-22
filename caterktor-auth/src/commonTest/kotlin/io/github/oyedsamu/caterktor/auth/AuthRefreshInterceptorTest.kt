@@ -13,6 +13,7 @@ import io.github.oyedsamu.caterktor.NetworkResponse
 import io.github.oyedsamu.caterktor.NetworkResult
 import io.github.oyedsamu.caterktor.Transport
 import io.github.oyedsamu.caterktor.get
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -21,6 +22,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 class AuthRefreshInterceptorTest {
@@ -141,6 +143,47 @@ class AuthRefreshInterceptorTest {
             assertIs<AuthRefreshFailedException>(error.cause)
         }
         assertEquals(1, refreshCalls.value())
+    }
+
+    @Test
+    fun refreshCancellationPropagatesUnchanged() = runTest {
+        val sentinel = CancellationException("refresh cancelled")
+        val client = CaterKtor {
+            transport = Transport { response(HttpStatus.Unauthorized) }
+            addInterceptor(
+                AuthRefreshInterceptor(
+                    tokenProvider = { "old" },
+                    refreshToken = { throw sentinel },
+                ),
+            )
+        }
+
+        val thrown = assertFailsWith<CancellationException> {
+            client.get<Unit>("https://example.test/private")
+        }
+
+        assertEquals(sentinel.message, thrown.message)
+    }
+
+    @Test
+    fun refreshFailureObserverCancellationPropagatesUnchanged() = runTest {
+        val sentinel = CancellationException("observer cancelled")
+        val client = CaterKtor {
+            transport = Transport { response(HttpStatus.Unauthorized) }
+            addInterceptor(
+                AuthRefreshInterceptor(
+                    tokenProvider = { "old" },
+                    refreshToken = { error("refresh backend down") },
+                    onRefreshFailed = { throw sentinel },
+                ),
+            )
+        }
+
+        val thrown = assertFailsWith<CancellationException> {
+            client.get<Unit>("https://example.test/private")
+        }
+
+        assertEquals(sentinel.message, thrown.message)
     }
 
     @Test

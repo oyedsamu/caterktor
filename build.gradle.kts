@@ -12,7 +12,7 @@ plugins {
 
 allprojects {
     group = "io.github.oyedsamu"
-    version = "0.1.0-SNAPSHOT"
+    version = providers.gradleProperty("caterktor.version").getOrElse("0.1.0-SNAPSHOT")
 }
 
 apiValidation {

@@ -725,6 +725,10 @@ public final class io/github/oyedsamu/caterktor/ResponseBody$Source : io/github/
 	public fun source ()Lkotlinx/io/Source;
 }
 
+public final class io/github/oyedsamu/caterktor/ResponseBodyKt {
+	public static final fun buffered (Lio/github/oyedsamu/caterktor/ResponseBody;I)Lio/github/oyedsamu/caterktor/ResponseBody$Bytes;
+}
+
 public abstract interface class io/github/oyedsamu/caterktor/ResponseUnwrapper {
 	public static final field Companion Lio/github/oyedsamu/caterktor/ResponseUnwrapper$Companion;
 	public fun unwrap (Lio/github/oyedsamu/caterktor/ResponseBody;Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/ResponseBody;

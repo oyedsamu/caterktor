@@ -13,6 +13,14 @@ import kotlin.reflect.KType
  * Implementations must be stateless or thread-safe; the same instance is
  * called concurrently for every in-flight request.
  *
+ * ## Buffering
+ *
+ * The current converter contract is byte-based. [decode] receives a fully
+ * buffered [RawBody], and [NetworkClient] enforces
+ * [CaterKtorBuilder.maxBodyDecodeBytes] before materialising response bytes for
+ * typed decoding. Streaming consumers should use [NetworkResponse.body]
+ * directly until a streaming converter API is introduced.
+ *
  * ## Content-type matching
  *
  * [supports] receives the bare media-type only, e.g. `"application/json"` — not
@@ -48,6 +56,9 @@ public interface BodyConverter {
 
     /**
      * Deserialize [raw] bytes into a value of type [T].
+     *
+     * [raw] has already been fully buffered by CaterKtor and is bounded by
+     * [CaterKtorBuilder.maxBodyDecodeBytes].
      *
      * @param raw The raw bytes and optional content-type from the response.
      * @param type The Kotlin runtime type to decode into, obtained via `typeOf<T>()`.

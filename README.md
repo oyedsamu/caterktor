@@ -143,7 +143,7 @@ To prevent the refresh call from re-entering auth, tag it with `CaterKtorKeys.SK
 ```kotlin
 client.get<Token>(
     url = "auth/token",
-    tags = mapOf(CaterKtorKeys.SKIP_AUTH to true),
+    attributes = Attributes { put(CaterKtorKeys.SKIP_AUTH, true) },
 )
 ```
 
@@ -263,8 +263,8 @@ jsonResponse("""{"name":"Ada"}""")                           // 200 with Content
 httpFailure(HttpStatus.Unauthorized)                         // NetworkError.Http convenience
 ```
 
-**Integration tests — `CaterktorTestServer`:** route-based matching backed by an in-process server.
-Use this when your test needs real HTTP semantics (retry, `Retry-After`, redirects).
+**Unit tests — `CaterktorTestServer`:** route-based matching backed by an in-memory transport.
+Use this when you want base-URL resolution, route scripts, and request capture without opening sockets.
 
 ```kotlin
 @OptIn(ExperimentalCaterktor::class)

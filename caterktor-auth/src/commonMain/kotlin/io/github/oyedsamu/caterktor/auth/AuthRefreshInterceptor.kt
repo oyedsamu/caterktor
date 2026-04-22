@@ -14,6 +14,7 @@ import io.github.oyedsamu.caterktor.NetworkResponse
 import io.github.oyedsamu.caterktor.PrivilegedInterceptor
 import io.github.oyedsamu.caterktor.TimeoutKind
 import io.github.oyedsamu.caterktor.proceedForAttempt
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.CoroutineScope
@@ -135,6 +136,7 @@ public class AuthRefreshInterceptor(
 
         return when (val outcome = refresh.awaitRespecting(chain.deadline)) {
             is RefreshOutcome.Success -> outcome.token
+            is RefreshOutcome.Cancelled -> throw outcome.cause
             is RefreshOutcome.Failure -> failRefresh(response, AuthRefreshFailedException(outcome.cause))
         }
     }
@@ -147,6 +149,8 @@ public class AuthRefreshInterceptor(
         val refresh = refreshScope.async {
             try {
                 RefreshOutcome.Success(refreshToken())
+            } catch (e: CancellationException) {
+                RefreshOutcome.Cancelled(e)
             } catch (t: Exception) {
                 RefreshOutcome.Failure(t)
             }
@@ -198,6 +202,8 @@ public class AuthRefreshInterceptor(
     private suspend fun notifyRefreshFailed(cause: Throwable) {
         try {
             onRefreshFailed(cause)
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             // Failure observers must not replace the auth failure seen by callers.
         }
@@ -211,6 +217,7 @@ public class AuthRefreshInterceptor(
 
     private sealed interface RefreshOutcome {
         data class Success(val token: String) : RefreshOutcome
+        data class Cancelled(val cause: CancellationException) : RefreshOutcome
         data class Failure(val cause: Exception) : RefreshOutcome
     }
 }

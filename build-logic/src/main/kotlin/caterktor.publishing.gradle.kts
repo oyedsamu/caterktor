@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "io.github.oyedsamu"
-version = project.findProperty("version") ?: "0.1.0-SNAPSHOT"
+version = (project.findProperty("caterktor.version") ?: project.version).toString()
 
 mavenPublishing {
     publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
