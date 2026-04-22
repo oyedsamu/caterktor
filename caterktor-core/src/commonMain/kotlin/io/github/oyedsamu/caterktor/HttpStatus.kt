@@ -1,5 +1,3 @@
-@file:Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
-
 package io.github.oyedsamu.caterktor
 
 /**
@@ -8,8 +6,10 @@ package io.github.oyedsamu.caterktor
  * Named constants for common status codes are available on the companion object, e.g.
  * [HttpStatus.OK], [HttpStatus.NotFound].
  *
- * Annotated with `@kotlin.jvm.JvmInline` so the JVM compiler treats this as an inline class.
- * On non-JVM targets the annotation is silently ignored.
+ * `@kotlin.jvm.JvmInline` is required here even in `commonMain` because the Android Kotlin
+ * compiler does not yet support bare `value class` without it. On non-JVM KMP targets the
+ * annotation is silently ignored. Kotlin 2.x no longer emits the historical
+ * `OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE` warning for this pattern.
  */
 @kotlin.jvm.JvmInline
 public value class HttpStatus(

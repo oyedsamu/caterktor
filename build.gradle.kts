@@ -8,6 +8,11 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
 
     alias(libs.plugins.binary.compatibility.validator)
+
+    // Applied at root so `./gradlew dokkaGenerate` produces a single aggregated
+    // HTML site across all submodules. Submodule Dokka plugins are applied by
+    // the convention plugin below; the root just owns the aggregation task.
+    alias(libs.plugins.dokka)
 }
 
 allprojects {

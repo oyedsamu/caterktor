@@ -7,6 +7,7 @@ import io.github.oyedsamu.caterktor.NetworkRequest
 import io.github.oyedsamu.caterktor.NetworkResponse
 import io.github.oyedsamu.caterktor.RequestBody
 import io.github.oyedsamu.caterktor.ResponseBody
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Logging detail level for [LoggerInterceptor].
@@ -124,11 +125,18 @@ public class LoggerInterceptor private constructor(
         logRequest(request)
 
         val startMark = kotlin.time.TimeSource.Monotonic.markNow()
-        val response = chain.proceed(request)
-        val durationMs = startMark.elapsedNow().inWholeMilliseconds
-
-        logResponse(response, durationMs)
-        return response
+        try {
+            val response = chain.proceed(request)
+            val durationMs = startMark.elapsedNow().inWholeMilliseconds
+            logResponse(response, durationMs)
+            return response
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            val durationMs = startMark.elapsedNow().inWholeMilliseconds
+            logger("<! ${e::class.simpleName ?: "Error"} after ${durationMs}ms: ${e.message}")
+            throw e
+        }
     }
 
     private fun logRequest(request: NetworkRequest) {

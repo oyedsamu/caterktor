@@ -33,6 +33,9 @@ jobs:
         env:
           JAVA_HOME: ${{ env.JAVA_HOME }}
 
+      - name: Generate documentation
+        run: ./gradlew dokkaGenerate --stacktrace -Pcaterktor.version=${{ steps.version.outputs.version }}
+
       - name: Publish to Maven Local (smoke test)
         run: ./gradlew publishToMavenLocal -Pcaterktor.version=${{ steps.version.outputs.version }}
 

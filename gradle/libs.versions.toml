@@ -36,6 +36,7 @@ kotlin-serialization-plugin = { module = "org.jetbrains.kotlin:kotlin-serializat
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 android-kmp-library-plugin = { module = "com.android.kotlin.multiplatform.library:com.android.kotlin.multiplatform.library.gradle.plugin", version.ref = "agp" }
 bcv-plugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "bcv" }
+dokka-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 vanniktech-publish-plugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "vanniktech" }
 
 [plugins]
