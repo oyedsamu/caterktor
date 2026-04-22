@@ -10,9 +10,8 @@ import kotlinx.coroutines.delay
  * ## What is retried
  *
  * By default only **idempotent** methods (GET, HEAD, DELETE, PUT, OPTIONS) are
- * retried. Set [retryNonIdempotent] to `true` to also retry POST and PATCH —
- * only do this if your server guarantees idempotency at the application level
- * (e.g. via idempotency keys).
+ * retried. Set [retryNonIdempotent] to `true` to permit POST and PATCH retries,
+ * but those requests still need an `Idempotency-Key` header.
  *
  * ## Retry triggers
  *
@@ -61,19 +60,20 @@ public class RetryInterceptor(
     override suspend fun intercept(chain: Chain): NetworkResponse {
         val request = chain.request
 
-        // Non-idempotent guard: if the method is not safe to retry and the
-        // caller has not opted in, delegate immediately without retry logic.
-        if (!retryNonIdempotent && !request.method.isIdempotent) {
+        // Non-idempotent guard: POST/PATCH require both caller opt-in and an
+        // Idempotency-Key. Retrying side-effecting calls without a key is too
+        // easy to turn into duplicate writes.
+        if (!request.isRetryableByMethod()) {
             return chain.proceed(request)
         }
 
-        var attempt = 1
+        var attempt = chain.attempt
         while (true) {
             val response: NetworkResponse?
             val error: NetworkError?
 
             try {
-                val raw = chain.proceed(request)
+                val raw = chain.proceedForAttempt(request, attempt)
                 // Check if the policy wants to retry a successful-transport response (e.g. 503)
                 if (attempt < maxAttempts) {
                     val httpError = if (raw.status.isClientError || raw.status.isServerError) {
@@ -89,10 +89,13 @@ public class RetryInterceptor(
 
                     if (httpError != null && policy.shouldRetry(attempt, request, raw, httpError)) {
                         val delayMs = policy.computeDelayMs(attempt, request, raw, httpError)
-                        if (deadlineAllowsRetry(chain, delayMs)) {
+                        val deadlineError = deadlineErrorIfRetryWouldMiss(chain, delayMs)
+                        if (deadlineError == null) {
                             delay(delayMs)
                             attempt++
                             continue
+                        } else {
+                            throw NetworkErrorException(deadlineError)
                         }
                     }
                 }
@@ -110,8 +113,9 @@ public class RetryInterceptor(
             }
 
             val delayMs = policy.computeDelayMs(attempt, request, response, error)
-            if (!deadlineAllowsRetry(chain, delayMs)) {
-                throw NetworkErrorException(error)
+            val deadlineError = deadlineErrorIfRetryWouldMiss(chain, delayMs)
+            if (deadlineError != null) {
+                throw NetworkErrorException(deadlineError)
             }
 
             delay(delayMs)
@@ -119,10 +123,17 @@ public class RetryInterceptor(
         }
     }
 
-    private fun deadlineAllowsRetry(chain: Chain, delayMs: Long): Boolean {
-        val deadline = chain.deadline ?: return true
+    private fun deadlineErrorIfRetryWouldMiss(chain: Chain, delayMs: Long): NetworkError.Timeout? {
+        val deadline = chain.deadline ?: return null
         val nowMs = kotlin.time.Clock.System.now().toEpochMilliseconds()
         val deadlineMs = deadline.toEpochMilliseconds()
-        return nowMs + delayMs < deadlineMs
+        return if (nowMs + delayMs < deadlineMs) {
+            null
+        } else {
+            NetworkError.Timeout(TimeoutKind.Deadline)
+        }
     }
+
+    private fun NetworkRequest.isRetryableByMethod(): Boolean =
+        method.isIdempotent || (retryNonIdempotent && "Idempotency-Key" in headers)
 }

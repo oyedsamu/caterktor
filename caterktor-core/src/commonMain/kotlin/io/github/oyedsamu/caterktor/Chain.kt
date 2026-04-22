@@ -1,6 +1,8 @@
 package io.github.oyedsamu.caterktor
 
+import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * The context an [Interceptor] receives for a single request.
@@ -78,10 +80,15 @@ internal class RealChain(
     private val interceptors: List<Interceptor>,
     private val index: Int,
     private val transport: Transport,
+    private val callState: CallExecutionState?,
+    private val timeoutConfig: TimeoutConfig?,
 ) : Chain {
     private var calls: Int = 0
 
-    override suspend fun proceed(request: NetworkRequest): NetworkResponse {
+    override suspend fun proceed(request: NetworkRequest): NetworkResponse =
+        proceed(request, attempt)
+
+    internal suspend fun proceed(request: NetworkRequest, attempt: Int): NetworkResponse {
         if (calls > 0) {
             // `index - 1` is the interceptor that received this chain and is
             // now re-invoking proceed. For the root chain (index == 0) there
@@ -94,9 +101,10 @@ internal class RealChain(
             }
         }
         calls += 1
+        callState?.recordAttempt(attempt)
 
         if (index >= interceptors.size) {
-            return transport.execute(request)
+            return executeTransportAttempt(request)
         }
         val next = RealChain(
             request = request,
@@ -105,7 +113,67 @@ internal class RealChain(
             interceptors = interceptors,
             index = index + 1,
             transport = transport,
+            callState = callState,
+            timeoutConfig = timeoutConfig,
         )
         return interceptors[index].intercept(next)
+    }
+
+    private suspend fun executeTransportAttempt(request: NetworkRequest): NetworkResponse {
+        val requestTimeoutMs = timeoutConfig?.requestTimeoutMs
+        val deadlineRemainingMs = deadline?.remainingMs()
+        val effectiveTimeoutMs = when {
+            requestTimeoutMs != null && deadlineRemainingMs != null -> minOf(requestTimeoutMs, deadlineRemainingMs)
+            requestTimeoutMs != null -> requestTimeoutMs
+            deadlineRemainingMs != null -> deadlineRemainingMs
+            else -> null
+        }
+
+        if (effectiveTimeoutMs == null) {
+            return transport.execute(request)
+        }
+
+        return withTimeoutOrNull(effectiveTimeoutMs) {
+            transport.execute(request)
+        } ?: throw NetworkErrorException(
+            NetworkError.Timeout(
+                kind = if (deadlineRemainingMs != null && deadlineRemainingMs <= requestTimeoutMs.orMax()) {
+                    TimeoutKind.Deadline
+                } else {
+                    TimeoutKind.Request
+                },
+            ),
+        )
+    }
+}
+
+private fun Instant.remainingMs(): Long =
+    (toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds()).coerceAtLeast(0L)
+
+private fun Long?.orMax(): Long = this ?: Long.MAX_VALUE
+
+/**
+ * Dispatch to the next stage while explicitly recording [attempt].
+ *
+ * This escape hatch is for [PrivilegedInterceptor] implementations that issue
+ * more than one downstream transport call for a single logical request, such as
+ * retry and auth-refresh follow-up. Ordinary interceptors should call
+ * [Chain.proceed].
+ */
+@ExperimentalCaterktor
+@OptIn(ExperimentalCaterktor::class)
+public suspend fun Chain.proceedForAttempt(
+    request: NetworkRequest,
+    attempt: Int,
+): NetworkResponse {
+    require(attempt >= 1) { "attempt must be >= 1, was $attempt" }
+    return when (this) {
+        is RealChain -> proceed(request, attempt)
+        else -> {
+            check(attempt == this.attempt) {
+                "Explicit attempt dispatch requires CaterKtor's built-in Chain implementation."
+            }
+            proceed(request)
+        }
     }
 }

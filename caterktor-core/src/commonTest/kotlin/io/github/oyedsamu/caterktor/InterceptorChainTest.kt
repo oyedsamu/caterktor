@@ -88,7 +88,9 @@ class InterceptorChainTest {
 
     @Test
     fun chain_deadlinePropagatesThroughEveryStage() = runTest {
-        val deadline: kotlin.time.Instant = kotlin.time.Instant.fromEpochMilliseconds(1_700_000_000_000)
+        val deadline: kotlin.time.Instant = kotlin.time.Instant.fromEpochMilliseconds(
+            kotlin.time.Clock.System.now().toEpochMilliseconds() + 300_000,
+        )
         val observed = mutableListOf<kotlin.time.Instant?>()
         val client = CaterKtor {
             transport = transportReturning(okResponse)

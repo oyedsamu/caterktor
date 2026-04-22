@@ -1,15 +1,16 @@
 package io.github.oyedsamu.caterktor
 
 import kotlin.random.Random
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KType
-import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.time.TimeSource
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withContext
 
 /**
  * The CaterKtor client — a constructed, disposable object that walks a request
@@ -80,6 +81,8 @@ public class NetworkClient internal constructor(
         request: NetworkRequest,
         deadline: Instant? = null,
     ): NetworkResponse {
+        val callState = coroutineContext[CallExecutionState]
+        callState?.recordAttempt(1)
         val chain = RealChain(
             request = request,
             attempt = 1,
@@ -87,6 +90,8 @@ public class NetworkClient internal constructor(
             interceptors = interceptors,
             index = 0,
             transport = transport,
+            callState = callState,
+            timeoutConfig = timeoutConfig,
         )
         return chain.proceed(request)
     }
@@ -109,6 +114,13 @@ public class NetworkClient internal constructor(
             add("[$i] ${interceptor.displayName()}")
         }
         add("[${interceptors.size}] Transport(${transport.displayName()})")
+    }
+
+    /**
+     * Close resources owned by the terminal transport, if any.
+     */
+    public fun close(): Unit {
+        (transport as? CloseableTransport)?.close()
     }
 
     private fun Interceptor.displayName(): String = this::class.simpleName ?: "<anonymous>"
@@ -137,46 +149,15 @@ internal suspend fun <T : Any> NetworkClient.call(
     val unwrapper: ResponseUnwrapper? =
         (request.tags[CaterKtorKeys.UNWRAPPER] as? ResponseUnwrapper) ?: defaultUnwrapper
 
-    // Compute the effective timeout: the minimum of requestTimeoutMs and
-    // the remaining millis until the deadline (if set).
-    val requestTimeoutMs = timeoutConfig?.requestTimeoutMs
-    val deadlineRemainingMs: Long? = deadline?.let {
-        (it.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds()).coerceAtLeast(0L)
-    }
-    val effectiveTimeoutMs: Long? = when {
-        requestTimeoutMs != null && deadlineRemainingMs != null ->
-            minOf(requestTimeoutMs, deadlineRemainingMs)
-        requestTimeoutMs != null -> requestTimeoutMs
-        deadlineRemainingMs != null -> deadlineRemainingMs
-        else -> null
-    }
-
+    val callState = CallExecutionState()
     return try {
-        val response: NetworkResponse? = if (effectiveTimeoutMs != null) {
-            withTimeoutOrNull(effectiveTimeoutMs) { execute(request, deadline) }
-        } else {
+        val response: NetworkResponse = withContext(callState) {
             execute(request, deadline)
         }
-
-        if (response == null) {
-            // withTimeoutOrNull returned null → timeout expired
-            val durationMs = mark.elapsedNow().inWholeMilliseconds
-            val isDeadline = deadlineRemainingMs != null &&
-                deadlineRemainingMs <= (requestTimeoutMs ?: Long.MAX_VALUE)
-            val error = NetworkError.Timeout(
-                kind = if (isDeadline) TimeoutKind.Deadline else TimeoutKind.Request,
-            )
-            tryEmitEvent(NetworkEvent.CallFailure(requestId, error, durationMs, 1))
-            return NetworkResult.Failure(
-                error = error,
-                durationMs = durationMs,
-                attempts = 1,
-                requestId = requestId,
-            )
-        }
+        val attempts = callState.attempts
 
         val durationMs = mark.elapsedNow().inWholeMilliseconds
-        tryEmitEvent(NetworkEvent.ResponseReceived(requestId, response.status, response.headers, durationMs, 1))
+        tryEmitEvent(NetworkEvent.ResponseReceived(requestId, response.status, response.headers, durationMs, attempts))
 
         if (response.status.isClientError || response.status.isServerError) {
             val raw = RawBody(response.body, response.headers["Content-Type"])
@@ -185,30 +166,31 @@ internal suspend fun <T : Any> NetworkClient.call(
                 headers = response.headers,
                 body = ErrorBody(raw = raw, parsed = null),
             )
-            tryEmitEvent(NetworkEvent.CallFailure(requestId, error, durationMs, 1))
+            tryEmitEvent(NetworkEvent.CallFailure(requestId, error, durationMs, attempts))
             NetworkResult.Failure(
                 error = error,
                 durationMs = durationMs,
-                attempts = 1,
+                attempts = attempts,
                 requestId = requestId,
             )
         } else {
-            val result = decodeResponse<T>(response, responseType, durationMs, requestId, unwrapper)
+            val result = decodeResponse<T>(response, responseType, durationMs, attempts, requestId, unwrapper)
             when (result) {
                 is NetworkResult.Success ->
-                    tryEmitEvent(NetworkEvent.CallSuccess(requestId, result.status, durationMs, 1))
+                    tryEmitEvent(NetworkEvent.CallSuccess(requestId, result.status, durationMs, result.attempts))
                 is NetworkResult.Failure ->
-                    tryEmitEvent(NetworkEvent.CallFailure(requestId, result.error, durationMs, 1))
+                    tryEmitEvent(NetworkEvent.CallFailure(requestId, result.error, durationMs, result.attempts))
             }
             result
         }
     } catch (e: NetworkErrorException) {
+        val attempts = callState.attempts
         val durationMs = mark.elapsedNow().inWholeMilliseconds
-        tryEmitEvent(NetworkEvent.CallFailure(requestId, e.error, durationMs, 1))
+        tryEmitEvent(NetworkEvent.CallFailure(requestId, e.error, durationMs, attempts))
         NetworkResult.Failure(
             error = e.error,
             durationMs = durationMs,
-            attempts = 1,
+            attempts = attempts,
             requestId = requestId,
         )
     }
@@ -219,6 +201,7 @@ private fun <T : Any> NetworkClient.decodeResponse(
     response: NetworkResponse,
     responseType: KType,
     durationMs: Long,
+    attempts: Int,
     requestId: String,
     unwrapper: ResponseUnwrapper? = null,
 ): NetworkResult<T> {
@@ -230,7 +213,7 @@ private fun <T : Any> NetworkClient.decodeResponse(
             status = response.status,
             headers = response.headers,
             durationMs = durationMs,
-            attempts = 1,
+            attempts = attempts,
             requestId = requestId,
         )
     }
@@ -247,7 +230,7 @@ private fun <T : Any> NetworkClient.decodeResponse(
                 ),
             ),
             durationMs = durationMs,
-            attempts = 1,
+            attempts = attempts,
             requestId = requestId,
         )
     return try {
@@ -263,9 +246,11 @@ private fun <T : Any> NetworkClient.decodeResponse(
             status = response.status,
             headers = response.headers,
             durationMs = durationMs,
-            attempts = 1,
+            attempts = attempts,
             requestId = requestId,
         )
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         NetworkResult.Failure(
             error = NetworkError.Serialization(
@@ -274,7 +259,7 @@ private fun <T : Any> NetworkClient.decodeResponse(
                 cause = e,
             ),
             durationMs = durationMs,
-            attempts = 1,
+            attempts = attempts,
             requestId = requestId,
         )
     }

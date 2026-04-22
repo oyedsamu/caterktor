@@ -1,5 +1,6 @@
 package io.github.oyedsamu.caterktor
 
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 import kotlin.time.Instant
@@ -195,6 +196,8 @@ public suspend fun <T : Any, B : Any> NetworkClient.callWithBody(
             (tags[CaterKtorKeys.ENVELOPER] as? RequestEnveloper) ?: defaultEnveloper
         enveloper?.envelop(encodedBytes, contentType)
             ?: RequestBody.Bytes(encodedBytes, contentType)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         return NetworkResult.Failure(
             error = NetworkError.Serialization(

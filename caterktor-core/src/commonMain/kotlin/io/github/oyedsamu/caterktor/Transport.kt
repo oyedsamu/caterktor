@@ -25,3 +25,11 @@ package io.github.oyedsamu.caterktor
 public fun interface Transport {
     public suspend fun execute(request: NetworkRequest): NetworkResponse
 }
+
+/**
+ * A [Transport] that owns resources and can be closed by [NetworkClient.close].
+ */
+@ExperimentalCaterktor
+public interface CloseableTransport : Transport {
+    public fun close()
+}
