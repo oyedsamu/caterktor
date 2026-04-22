@@ -61,9 +61,8 @@ public class KotlinxJsonConverter(
      * @throws SerializationException if [value] cannot be serialized — e.g. a
      *   missing serializer or a polymorphic type that is not registered.
      */
-    @Suppress("UNCHECKED_CAST")
     public override fun <T : Any> encode(value: T, type: KType, contentType: String): ByteArray {
-        val ser = serializer(type) as KSerializer<T>
+        val ser = unsafeCastSerializer<T>(serializer(type))
         return json.encodeToString(ser, value).encodeToByteArray()
     }
 
@@ -80,11 +79,13 @@ public class KotlinxJsonConverter(
      *   if the JSON structure does not match [type] (e.g. a missing required field or
      *   an unknown key when [Json.ignoreUnknownKeys] is `false`).
      */
-    @Suppress("UNCHECKED_CAST")
     public override fun <T : Any> decode(raw: RawBody, type: KType): T {
-        val deser = serializer(type) as KSerializer<T>
+        val deser = unsafeCastSerializer<T>(serializer(type))
         return json.decodeFromString(deser, raw.bytes.decodeToString())
     }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T : Any> unsafeCastSerializer(ser: Any): KSerializer<T> = ser as KSerializer<T>
 
     private companion object {
         private val DefaultJson: Json = Json {

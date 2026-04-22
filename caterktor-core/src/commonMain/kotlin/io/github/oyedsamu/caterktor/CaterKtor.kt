@@ -1,7 +1,5 @@
 package io.github.oyedsamu.caterktor
 
-import io.ktor.client.HttpClientConfig
-
 /**
  * Build a [NetworkClient] via DSL.
  *
@@ -56,7 +54,8 @@ public class CaterKtorBuilder internal constructor() {
     private var _contentNegotiation: ContentNegotiationRegistry = ContentNegotiationRegistry.Empty
     private var _defaultUnwrapper: ResponseUnwrapper? = null
     private var _defaultEnveloper: RequestEnveloper? = null
-    private var _ktorBlock: (HttpClientConfig<*>.() -> Unit)? = null
+    private var _transportFinalizer: ((Transport) -> Transport)? = null
+    private var _maxBodyDecodeBytes: Int = 10 * 1024 * 1024
 
     /**
      * Configure per-attempt and advisory connection timeouts.
@@ -207,28 +206,36 @@ public class CaterKtorBuilder internal constructor() {
     }
 
     /**
-     * Apply additional configuration to the underlying Ktor [HttpClient].
+     * Register a [finalizer] that transforms the [Transport] at [build] time.
      *
-     * This is the K4 escape hatch: use it to install Ktor plugins (caching, logging,
-     * content-encoding, etc.) that CaterKtor does not surface directly.
+     * This hook is the extension point used by `caterktor-ktor`'s `ktor { }`
+     * DSL function — it lets sibling modules post-process the transport without
+     * introducing a Ktor dependency in core. Multiple calls accumulate; each
+     * finalizer is applied to the result of the previous one, in registration order.
      *
-     * The block is applied **after** the engine-specific factory configures the client.
-     * Multiple calls accumulate — each block is applied in registration order.
-     *
-     * Only effective when [transport] is a [KtorTransport]. Silently ignored otherwise.
-     *
-     * ```kotlin
-     * val client = CaterKtor {
-     *     transport = OkHttpTransport()
-     *     ktor {
-     *         install(HttpCache)
-     *     }
-     * }
-     * ```
+     * Engine modules and application code should prefer higher-level APIs such as
+     * the `ktor { }` extension defined in `caterktor-ktor`.
      */
-    public fun ktor(block: HttpClientConfig<*>.() -> Unit): CaterKtorBuilder = apply {
-        val existing = _ktorBlock
-        _ktorBlock = if (existing == null) block else ({ existing(); block() })
+    public fun addTransportFinalizer(finalizer: (Transport) -> Transport): CaterKtorBuilder = apply {
+        val existing = _transportFinalizer
+        _transportFinalizer = if (existing == null) finalizer else { t -> finalizer(existing(t)) }
+    }
+
+    /**
+     * Set the maximum number of bytes that [NetworkClient] will materialise into a [ByteArray]
+     * when decoding a response body via [BodyConverter.decode].
+     *
+     * When the response `Content-Length` header is present and exceeds this limit, decoding
+     * is short-circuited with a [NetworkError.Serialization] failure. Bodies without a
+     * known `Content-Length` (e.g. chunked transfer) are not guarded by this check.
+     *
+     * Defaults to 10 MiB (10 × 1024 × 1024 bytes).
+     *
+     * @param bytes The maximum body size in bytes. Must be positive.
+     */
+    public fun maxBodyDecodeBytes(bytes: Int): CaterKtorBuilder = apply {
+        require(bytes > 0) { "maxBodyDecodeBytes must be positive, was $bytes" }
+        _maxBodyDecodeBytes = bytes
     }
 
     internal fun build(): NetworkClient {
@@ -240,10 +247,8 @@ public class CaterKtorBuilder internal constructor() {
         if (_defaultHeaderEntries.isNotEmpty()) {
             _interceptors.add(0, DefaultHeadersInterceptor(_defaultHeaderEntries.toList()))
         }
-        // K4: apply any ktor { } blocks on top of the transport's HttpClient
-        val finalTransport: Transport = _ktorBlock?.let { block ->
-            if (t is KtorTransport) KtorTransport(t.httpClient.config(block)) else t
-        } ?: t
+        // K4: apply any transport finalizers registered by extension modules (e.g. caterktor-ktor)
+        val finalTransport: Transport = _transportFinalizer?.invoke(t) ?: t
 
         return NetworkClient(
             transport = finalTransport,
@@ -254,6 +259,7 @@ public class CaterKtorBuilder internal constructor() {
             timeoutConfig = _timeoutConfig,
             defaultUnwrapper = _defaultUnwrapper,
             defaultEnveloper = _defaultEnveloper,
+            maxBodyDecodeBytes = _maxBodyDecodeBytes,
         )
     }
 }

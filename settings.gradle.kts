@@ -24,6 +24,7 @@ includeBuild("build-logic")
 
 include(
     ":caterktor-core",
+    ":caterktor-ktor",
     ":caterktor-serialization-json",
     ":caterktor-serialization-protobuf",
     ":caterktor-serialization-cbor",

@@ -64,3 +64,16 @@ public interface Interceptor {
  */
 @ExperimentalCaterktor
 public interface PrivilegedInterceptor : Interceptor
+
+/**
+ * An [Interceptor] that owns resources (e.g. a [kotlinx.coroutines.CoroutineScope]) and
+ * must be explicitly closed when the owning [NetworkClient] is closed.
+ *
+ * [NetworkClient.close] iterates over the registered interceptors and calls [close] on
+ * any that implement this interface. Implementations must be idempotent — calling [close]
+ * more than once must not throw.
+ */
+@ExperimentalCaterktor
+public interface CloseableInterceptor : Interceptor {
+    public fun close()
+}

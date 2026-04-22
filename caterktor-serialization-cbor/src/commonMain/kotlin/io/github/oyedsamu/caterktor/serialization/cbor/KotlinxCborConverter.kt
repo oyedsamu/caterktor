@@ -64,9 +64,8 @@ public class KotlinxCborConverter(
      * @throws kotlinx.serialization.SerializationException if [value] cannot be
      *   serialized — e.g. a missing serializer or an unregistered polymorphic type.
      */
-    @Suppress("UNCHECKED_CAST")
     public override fun <T : Any> encode(value: T, type: KType, contentType: String): ByteArray {
-        val ser = serializer(type) as KSerializer<T>
+        val ser = unsafeCastSerializer<T>(serializer(type))
         return cbor.encodeToByteArray(ser, value)
     }
 
@@ -83,9 +82,11 @@ public class KotlinxCborConverter(
      * @throws kotlinx.serialization.SerializationException if the bytes cannot be
      *   parsed as valid CBOR, or if the CBOR structure does not match [type].
      */
-    @Suppress("UNCHECKED_CAST")
     public override fun <T : Any> decode(raw: RawBody, type: KType): T {
-        val deser = serializer(type) as KSerializer<T>
+        val deser = unsafeCastSerializer<T>(serializer(type))
         return cbor.decodeFromByteArray(deser, raw.bytes)
     }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T : Any> unsafeCastSerializer(ser: Any): KSerializer<T> = ser as KSerializer<T>
 }

@@ -1,0 +1,13 @@
+public final class io/github/oyedsamu/caterktor/KtorDslKt {
+	public static final fun ktor (Lio/github/oyedsamu/caterktor/CaterKtorBuilder;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
+}
+
+public final class io/github/oyedsamu/caterktor/KtorTransport : io/github/oyedsamu/caterktor/CloseableTransport {
+	public fun <init> (Lio/ktor/client/HttpClient;Z)V
+	public synthetic fun <init> (Lio/ktor/client/HttpClient;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
+	public fun execute (Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getHttpClient ()Lio/ktor/client/HttpClient;
+	public final fun getOwnsHttpClient ()Z
+}
+

@@ -2,6 +2,7 @@ package io.github.oyedsamu.caterktor.auth
 
 import io.github.oyedsamu.caterktor.CaterKtorKeys
 import io.github.oyedsamu.caterktor.Chain
+import io.github.oyedsamu.caterktor.CloseableInterceptor
 import io.github.oyedsamu.caterktor.ErrorBody
 import io.github.oyedsamu.caterktor.ExperimentalCaterktor
 import io.github.oyedsamu.caterktor.Headers
@@ -20,6 +21,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
@@ -80,13 +82,23 @@ public class AuthRefreshInterceptor(
     public val refreshToken: suspend () -> String,
     public val budget: RefreshBudget = RefreshBudget(),
     public val onRefreshFailed: suspend (Throwable) -> Unit = {},
-) : PrivilegedInterceptor {
+) : PrivilegedInterceptor, CloseableInterceptor {
 
     private val mutex = Mutex()
     private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var inFlightRefresh: Deferred<RefreshOutcome>? = null
     private var windowStartMs: Long = 0L
     private var refreshesInWindow: Int = 0
+
+    /**
+     * Cancels the internal [refreshScope], terminating any in-flight token refresh.
+     *
+     * Must be called when the owning [io.github.oyedsamu.caterktor.NetworkClient] is closed.
+     * Idempotent — repeated calls have no effect after the first.
+     */
+    override fun close(): Unit {
+        refreshScope.cancel()
+    }
 
     override suspend fun intercept(chain: Chain): NetworkResponse {
         val originalRequest = chain.request

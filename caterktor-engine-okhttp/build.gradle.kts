@@ -7,7 +7,7 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api(project(":caterktor-core"))
+            api(project(":caterktor-ktor"))
             api(libs.ktor.client.okhttp)
         }
     }

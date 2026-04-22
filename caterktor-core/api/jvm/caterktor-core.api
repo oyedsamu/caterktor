@@ -7,6 +7,7 @@ public abstract interface class io/github/oyedsamu/caterktor/BodyConverter {
 public final class io/github/oyedsamu/caterktor/CaterKtorBuilder {
 	public final fun addConverter (Lio/github/oyedsamu/caterktor/BodyConverter;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun addInterceptor (Lio/github/oyedsamu/caterktor/Interceptor;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
+	public final fun addTransportFinalizer (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun contentNegotiation (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun defaultHeader (Ljava/lang/String;Ljava/lang/String;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun defaultHeader (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
@@ -20,7 +21,7 @@ public final class io/github/oyedsamu/caterktor/CaterKtorBuilder {
 	public final fun getInterceptors ()Ljava/util/List;
 	public final fun getTimeoutConfig ()Lio/github/oyedsamu/caterktor/TimeoutConfig;
 	public final fun getTransport ()Lio/github/oyedsamu/caterktor/Transport;
-	public final fun ktor (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
+	public final fun maxBodyDecodeBytes (I)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun setBaseUrl (Ljava/lang/String;)V
 	public final fun setTransport (Lio/github/oyedsamu/caterktor/Transport;)V
 	public final fun timeout (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
@@ -80,6 +81,10 @@ public final class io/github/oyedsamu/caterktor/CircuitBreakerState : java/lang/
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/CircuitBreakerState;
 	public static fun values ()[Lio/github/oyedsamu/caterktor/CircuitBreakerState;
+}
+
+public abstract interface class io/github/oyedsamu/caterktor/CloseableInterceptor : io/github/oyedsamu/caterktor/Interceptor {
+	public abstract fun close ()V
 }
 
 public abstract interface class io/github/oyedsamu/caterktor/CloseableTransport : io/github/oyedsamu/caterktor/Transport {
@@ -266,15 +271,6 @@ public abstract interface class io/github/oyedsamu/caterktor/Interceptor {
 	public abstract fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class io/github/oyedsamu/caterktor/KtorTransport : io/github/oyedsamu/caterktor/CloseableTransport {
-	public fun <init> (Lio/ktor/client/HttpClient;Z)V
-	public synthetic fun <init> (Lio/ktor/client/HttpClient;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close ()V
-	public fun execute (Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun getHttpClient ()Lio/ktor/client/HttpClient;
-	public final fun getOwnsHttpClient ()Z
-}
-
 public final class io/github/oyedsamu/caterktor/NetworkClient {
 	public final fun close ()V
 	public final fun describePipeline ()Ljava/util/List;
@@ -286,6 +282,7 @@ public final class io/github/oyedsamu/caterktor/NetworkClient {
 	public final fun getDefaultEnveloper ()Lio/github/oyedsamu/caterktor/RequestEnveloper;
 	public final fun getDefaultUnwrapper ()Lio/github/oyedsamu/caterktor/ResponseUnwrapper;
 	public final fun getEvents ()Lkotlinx/coroutines/flow/SharedFlow;
+	public final fun getMaxBodyDecodeBytes ()I
 	public final fun tryEmitEvent (Lio/github/oyedsamu/caterktor/NetworkEvent;)V
 }
 

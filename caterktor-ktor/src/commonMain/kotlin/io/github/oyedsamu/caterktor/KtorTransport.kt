@@ -37,8 +37,7 @@ import io.ktor.http.HttpMethod as KtorHttpMethod
  * byte array in CaterKtor.
  *
  * Responses are currently exposed as replayable [ResponseBody.Bytes] because
- * this in-core transport uses Ktor's buffered request API. The Ktor module
- * split will introduce a closable streaming response contract.
+ * this transport uses Ktor's buffered request API.
  *
  * @property httpClient The caller-supplied Ktor client. The exact instance
  *   passed in is retained so that callers can reference it for diagnostics;

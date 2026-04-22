@@ -19,9 +19,10 @@ public final class io/github/oyedsamu/caterktor/auth/AuthRefreshFailedException 
 	public final fun getOriginalCause ()Ljava/lang/Throwable;
 }
 
-public final class io/github/oyedsamu/caterktor/auth/AuthRefreshInterceptor : io/github/oyedsamu/caterktor/PrivilegedInterceptor {
+public final class io/github/oyedsamu/caterktor/auth/AuthRefreshInterceptor : io/github/oyedsamu/caterktor/CloseableInterceptor, io/github/oyedsamu/caterktor/PrivilegedInterceptor {
 	public fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lio/github/oyedsamu/caterktor/auth/RefreshBudget;Lkotlin/jvm/functions/Function2;)V
 	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lio/github/oyedsamu/caterktor/auth/RefreshBudget;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
 	public final fun getBudget ()Lio/github/oyedsamu/caterktor/auth/RefreshBudget;
 	public final fun getOnRefreshFailed ()Lkotlin/jvm/functions/Function2;
 	public final fun getRefreshToken ()Lkotlin/jvm/functions/Function1;

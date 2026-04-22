@@ -46,6 +46,19 @@ public class NetworkClient internal constructor(
     internal val timeoutConfig: TimeoutConfig? = null,
     @PublishedApi internal val defaultUnwrapper: ResponseUnwrapper? = null,
     @PublishedApi internal val defaultEnveloper: RequestEnveloper? = null,
+    /**
+     * Maximum number of bytes that [decodeResponse] will materialise into a [ByteArray] before
+     * calling [BodyConverter.decode]. When the response `Content-Length` header is present and
+     * exceeds this value, decoding is short-circuited with a
+     * [NetworkError.Serialization] failure rather than attempting to allocate a potentially
+     * heap-busting buffer.
+     *
+     * Bodies whose `Content-Length` is absent (e.g. chunked transfer) are not guarded by this
+     * check — the limit only applies when the server advertises a known size up-front.
+     *
+     * Defaults to 10 MiB (10 × 1024 × 1024 bytes). Set via [CaterKtorBuilder.maxBodyDecodeBytes].
+     */
+    @PublishedApi internal val maxBodyDecodeBytes: Int = 10 * 1024 * 1024,
 ) {
 
     private val _events: MutableSharedFlow<NetworkEvent> = MutableSharedFlow(
@@ -127,10 +140,11 @@ public class NetworkClient internal constructor(
     }
 
     /**
-     * Close resources owned by the terminal transport, if any.
+     * Close resources owned by the terminal transport and any [CloseableInterceptor]s, if any.
      */
     public fun close(): Unit {
         (transport as? CloseableTransport)?.close()
+        interceptors.forEach { (it as? CloseableInterceptor)?.close() }
     }
 
     private fun Interceptor.displayName(): String = this::class.simpleName ?: "<anonymous>"
@@ -245,6 +259,22 @@ private fun <T : Any> NetworkClient.decodeResponse(
             attempts = attempts,
             requestId = requestId,
         )
+    val contentLength = response.body.contentLength
+    if (contentLength != null && contentLength > maxBodyDecodeBytes) {
+        return NetworkResult.Failure(
+            error = NetworkError.Serialization(
+                phase = SerializationPhase.Decoding,
+                rawBody = null,
+                cause = IllegalStateException(
+                    "Response body ($contentLength bytes) exceeds maxBodyDecodeBytes ($maxBodyDecodeBytes). " +
+                        "Access the raw ResponseBody directly or increase the limit.",
+                ),
+            ),
+            durationMs = durationMs,
+            attempts = attempts,
+            requestId = requestId,
+        )
+    }
     return try {
         val responseBody: ResponseBody = if (unwrapper != null) {
             unwrapper.unwrap(response.body, bareContentType.ifEmpty { null }, response)

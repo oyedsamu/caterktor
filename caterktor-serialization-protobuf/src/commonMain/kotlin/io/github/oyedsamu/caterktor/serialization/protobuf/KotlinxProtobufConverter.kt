@@ -39,15 +39,16 @@ public class KotlinxProtobufConverter(
     override fun supports(contentType: String): Boolean =
         contentType == "application/x-protobuf" || contentType == "application/protobuf"
 
-    @Suppress("UNCHECKED_CAST")
     override fun <T : Any> encode(value: T, type: KType, contentType: String): ByteArray {
-        val ser = serializer(type) as KSerializer<T>
+        val ser = unsafeCastSerializer<T>(serializer(type))
         return protoBuf.encodeToByteArray(ser, value)
     }
 
-    @Suppress("UNCHECKED_CAST")
     override fun <T : Any> decode(raw: RawBody, type: KType): T {
-        val deser = serializer(type) as KSerializer<T>
+        val deser = unsafeCastSerializer<T>(serializer(type))
         return protoBuf.decodeFromByteArray(deser, raw.bytes)
     }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T : Any> unsafeCastSerializer(ser: Any): KSerializer<T> = ser as KSerializer<T>
 }
