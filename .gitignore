@@ -8,3 +8,4 @@ local.properties
 *.hprof
 out/
 .DS_Store
+.claude/
