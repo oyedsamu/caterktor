@@ -22,8 +22,10 @@ import io.github.oyedsamu.caterktor.NetworkResponse
  * tags — this prevents infinite loops when an auth-refresh interceptor issues its own
  * unauthenticated request through the same client.
  *
- * Register **before** `RetryInterceptor` and `LoggerInterceptor` so that retried requests
- * receive a fresh token and logged requests show the actual header.
+ * For non-refreshing auth, register this interceptor after retry if you need a
+ * fresh token lookup for each retry attempt. For 401 refresh flows, prefer
+ * [AuthRefreshInterceptor], which owns both token injection and the refresh
+ * follow-up retry.
  */
 @ExperimentalCaterktor
 public class BearerAuthInterceptor(

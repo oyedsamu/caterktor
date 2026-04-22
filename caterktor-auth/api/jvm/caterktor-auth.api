@@ -1,7 +1,42 @@
+public final class io/github/oyedsamu/caterktor/auth/AuthRefreshBudgetExceededException : java/lang/IllegalStateException {
+	public fun <init> (Lio/github/oyedsamu/caterktor/auth/RefreshBudget;)V
+	public final fun getBudget ()Lio/github/oyedsamu/caterktor/auth/RefreshBudget;
+}
+
+public final class io/github/oyedsamu/caterktor/auth/AuthRefreshFailedException : java/lang/IllegalStateException {
+	public fun <init> (Ljava/lang/Throwable;)V
+	public final fun getOriginalCause ()Ljava/lang/Throwable;
+}
+
+public final class io/github/oyedsamu/caterktor/auth/AuthRefreshInterceptor : io/github/oyedsamu/caterktor/PrivilegedInterceptor {
+	public fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lio/github/oyedsamu/caterktor/auth/RefreshBudget;Lkotlin/jvm/functions/Function2;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lio/github/oyedsamu/caterktor/auth/RefreshBudget;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBudget ()Lio/github/oyedsamu/caterktor/auth/RefreshBudget;
+	public final fun getOnRefreshFailed ()Lkotlin/jvm/functions/Function2;
+	public final fun getRefreshToken ()Lkotlin/jvm/functions/Function1;
+	public final fun getTokenProvider ()Lkotlin/jvm/functions/Function1;
+	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class io/github/oyedsamu/caterktor/auth/BearerAuthInterceptor : io/github/oyedsamu/caterktor/Interceptor {
 	public fun <init> (Ljava/lang/String;)V
 	public fun <init> (Lkotlin/jvm/functions/Function1;)V
 	public final fun getTokenProvider ()Lkotlin/jvm/functions/Function1;
 	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/oyedsamu/caterktor/auth/RefreshBudget {
+	public fun <init> ()V
+	public fun <init> (IJ)V
+	public synthetic fun <init> (IJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()J
+	public final fun copy (IJ)Lio/github/oyedsamu/caterktor/auth/RefreshBudget;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/auth/RefreshBudget;IJILjava/lang/Object;)Lio/github/oyedsamu/caterktor/auth/RefreshBudget;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMaxRefreshes ()I
+	public final fun getWindowMs ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
