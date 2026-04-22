@@ -1,3 +1,8 @@
+public final class io/github/oyedsamu/caterktor/serialization/cbor/CborContentNegotiationKt {
+	public static final fun cbor (Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;Lio/github/oyedsamu/caterktor/serialization/cbor/KotlinxCborConverter;Ljava/lang/String;D)Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;
+	public static synthetic fun cbor$default (Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;Lio/github/oyedsamu/caterktor/serialization/cbor/KotlinxCborConverter;Ljava/lang/String;DILjava/lang/Object;)Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;
+}
+
 public final class io/github/oyedsamu/caterktor/serialization/cbor/KotlinxCborConverter : io/github/oyedsamu/caterktor/BodyConverter {
 	public fun <init> ()V
 	public fun <init> (Lkotlinx/serialization/cbor/Cbor;)V

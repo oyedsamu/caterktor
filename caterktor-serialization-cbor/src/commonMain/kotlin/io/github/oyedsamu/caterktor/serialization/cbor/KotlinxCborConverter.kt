@@ -3,6 +3,7 @@ package io.github.oyedsamu.caterktor.serialization.cbor
 import io.github.oyedsamu.caterktor.BodyConverter
 import io.github.oyedsamu.caterktor.ExperimentalCaterktor
 import io.github.oyedsamu.caterktor.RawBody
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.serializer
@@ -34,6 +35,7 @@ import kotlin.reflect.KType
  * @property cbor The [Cbor] instance used for all encode/decode operations.
  */
 @ExperimentalCaterktor
+@OptIn(ExperimentalSerializationApi::class)
 public class KotlinxCborConverter(
     public val cbor: Cbor = Cbor,
 ) : BodyConverter {

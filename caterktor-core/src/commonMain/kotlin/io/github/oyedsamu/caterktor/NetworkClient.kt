@@ -41,6 +41,7 @@ public class NetworkClient internal constructor(
     private val transport: Transport,
     internal val interceptors: List<Interceptor>,
     @PublishedApi internal val converters: List<BodyConverter> = emptyList(),
+    @PublishedApi internal val contentNegotiation: ContentNegotiationRegistry = ContentNegotiationRegistry.Empty,
     @PublishedApi internal val baseUrl: String? = null,
     internal val timeoutConfig: TimeoutConfig? = null,
     @PublishedApi internal val defaultUnwrapper: ResponseUnwrapper? = null,
@@ -144,15 +145,16 @@ internal suspend fun <T : Any> NetworkClient.call(
 ): NetworkResult<T> {
     val requestId = generateRequestId()
     val mark = TimeSource.Monotonic.markNow()
-    tryEmitEvent(NetworkEvent.CallStart(requestId, request))
+    val requestForCall = request.withContentNegotiationAccept(contentNegotiation.acceptHeader)
+    tryEmitEvent(NetworkEvent.CallStart(requestId, requestForCall))
 
     val unwrapper: ResponseUnwrapper? =
-        (request.tags[CaterKtorKeys.UNWRAPPER] as? ResponseUnwrapper) ?: defaultUnwrapper
+        (requestForCall.tags[CaterKtorKeys.UNWRAPPER] as? ResponseUnwrapper) ?: defaultUnwrapper
 
     val callState = CallExecutionState()
     return try {
         val response: NetworkResponse = withContext(callState) {
-            execute(request, deadline)
+            execute(requestForCall, deadline)
         }
         val attempts = callState.attempts
 
@@ -218,8 +220,9 @@ private fun <T : Any> NetworkClient.decodeResponse(
         )
     }
     val contentTypeHeader = response.headers["Content-Type"]
-    val bareContentType = contentTypeHeader?.substringBefore(';')?.trim() ?: ""
-    val converter = converters.firstOrNull { it.supports(bareContentType) }
+    val bareContentType = ContentNegotiationRegistry.bareContentType(contentTypeHeader) ?: ""
+    val converter = contentNegotiation.converterFor(contentTypeHeader)
+        ?: converters.firstOrNull { it.supports(bareContentType) }
         ?: return NetworkResult.Failure(
             error = NetworkError.Serialization(
                 phase = SerializationPhase.Decoding,
@@ -272,4 +275,9 @@ private fun <T : Any> NetworkClient.decodeResponse(
 @PublishedApi
 internal fun generateRequestId(): String = buildString(32) {
     repeat(4) { append(Random.nextLong().toULong().toString(16).padStart(16, '0')) }
+}
+
+private fun NetworkRequest.withContentNegotiationAccept(acceptHeader: String?): NetworkRequest {
+    if (acceptHeader == null || "Accept" in headers) return this
+    return copy(headers = headers + Headers { set("Accept", acceptHeader) })
 }

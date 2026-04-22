@@ -3,6 +3,7 @@ package io.github.oyedsamu.caterktor.serialization.protobuf
 import io.github.oyedsamu.caterktor.BodyConverter
 import io.github.oyedsamu.caterktor.ExperimentalCaterktor
 import io.github.oyedsamu.caterktor.RawBody
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.serializer
@@ -30,6 +31,7 @@ import kotlin.reflect.KType
  * therefore safe to share across coroutines and threads.
  */
 @ExperimentalCaterktor
+@OptIn(ExperimentalSerializationApi::class)
 public class KotlinxProtobufConverter(
     public val protoBuf: ProtoBuf = ProtoBuf,
 ) : BodyConverter {

@@ -175,7 +175,9 @@ public suspend fun <T : Any, B : Any> NetworkClient.callWithBody(
     tags: Map<String, Any>,
     deadline: Instant?,
 ): NetworkResult<T> {
-    val converter = converters.firstOrNull { it.supports(contentType) }
+    val bareContentType = ContentNegotiationRegistry.bareContentType(contentType) ?: contentType.trim()
+    val converter = contentNegotiation.converterFor(contentType)
+        ?: converters.firstOrNull { it.supports(bareContentType) }
         ?: return NetworkResult.Failure(
             error = NetworkError.Serialization(
                 phase = SerializationPhase.Encoding,

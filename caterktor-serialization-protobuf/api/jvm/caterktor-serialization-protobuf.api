@@ -8,3 +8,8 @@ public final class io/github/oyedsamu/caterktor/serialization/protobuf/KotlinxPr
 	public fun supports (Ljava/lang/String;)Z
 }
 
+public final class io/github/oyedsamu/caterktor/serialization/protobuf/ProtobufContentNegotiationKt {
+	public static final fun protobuf (Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;Lio/github/oyedsamu/caterktor/serialization/protobuf/KotlinxProtobufConverter;Ljava/util/List;D)Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;
+	public static synthetic fun protobuf$default (Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;Lio/github/oyedsamu/caterktor/serialization/protobuf/KotlinxProtobufConverter;Ljava/util/List;DILjava/lang/Object;)Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;
+}
+

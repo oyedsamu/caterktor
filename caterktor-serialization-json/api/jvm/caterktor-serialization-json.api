@@ -15,6 +15,11 @@ public final class io/github/oyedsamu/caterktor/serialization/json/DataFieldUnwr
 	public fun unwrap ([BLjava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)[B
 }
 
+public final class io/github/oyedsamu/caterktor/serialization/json/JsonContentNegotiationKt {
+	public static final fun json (Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;Lio/github/oyedsamu/caterktor/serialization/json/KotlinxJsonConverter;Ljava/lang/String;D)Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;
+	public static synthetic fun json$default (Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;Lio/github/oyedsamu/caterktor/serialization/json/KotlinxJsonConverter;Ljava/lang/String;DILjava/lang/Object;)Lio/github/oyedsamu/caterktor/ContentNegotiationRegistry$Builder;
+}
+
 public final class io/github/oyedsamu/caterktor/serialization/json/KotlinxJsonConverter : io/github/oyedsamu/caterktor/BodyConverter {
 	public fun <init> ()V
 	public fun <init> (Lkotlinx/serialization/json/Json;)V

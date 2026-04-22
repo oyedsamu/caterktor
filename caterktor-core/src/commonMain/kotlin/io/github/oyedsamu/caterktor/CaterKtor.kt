@@ -53,6 +53,7 @@ public class CaterKtorBuilder internal constructor() {
     private val _converters: MutableList<BodyConverter> = mutableListOf()
     private val _defaultHeaderEntries: MutableList<Pair<String, suspend () -> String>> = mutableListOf()
     private var _timeoutConfig: TimeoutConfig? = null
+    private var _contentNegotiation: ContentNegotiationRegistry = ContentNegotiationRegistry.Empty
     private var _defaultUnwrapper: ResponseUnwrapper? = null
     private var _defaultEnveloper: RequestEnveloper? = null
     private var _ktorBlock: (HttpClientConfig<*>.() -> Unit)? = null
@@ -161,6 +162,20 @@ public class CaterKtorBuilder internal constructor() {
     public val converters: List<BodyConverter>
         get() = _converters.toList()
 
+    /** Registered content negotiation converters and media types. */
+    public val contentNegotiation: ContentNegotiationRegistry
+        get() = _contentNegotiation
+
+    /**
+     * Register media-type-aware converters.
+     *
+     * Registered entries are used for request converter selection, response
+     * `Content-Type` dispatch, and default `Accept` construction for typed calls.
+     */
+    public fun contentNegotiation(block: ContentNegotiationRegistry.Builder.() -> Unit): CaterKtorBuilder = apply {
+        _contentNegotiation = _contentNegotiation.toBuilder().apply(block).build()
+    }
+
     /** The default [ResponseUnwrapper], or `null` if none was set. */
     public val defaultUnwrapper: ResponseUnwrapper?
         get() = _defaultUnwrapper
@@ -234,6 +249,7 @@ public class CaterKtorBuilder internal constructor() {
             transport = finalTransport,
             interceptors = _interceptors.toList(),
             converters = _converters.toList(),
+            contentNegotiation = _contentNegotiation,
             baseUrl = baseUrl,
             timeoutConfig = _timeoutConfig,
             defaultUnwrapper = _defaultUnwrapper,
