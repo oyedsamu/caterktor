@@ -11,9 +11,11 @@ import io.github.oyedsamu.caterktor.NetworkRequest
 import io.github.oyedsamu.caterktor.NetworkResponse
 import io.github.oyedsamu.caterktor.RequestBody
 import io.github.oyedsamu.caterktor.Transport
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -38,6 +40,52 @@ class LoggerInterceptorTest {
         assertEquals(2, lines.size)
         assertTrue(lines[0].contains("GET https://example.test/items"))
         assertTrue(lines[1].contains("204"))
+    }
+
+    @Test
+    fun basicLevelLogsTransportFailureBeforeRethrowing() = runTest {
+        val lines = mutableListOf<String>()
+        val client = CaterKtor {
+            transport = Transport { throw IllegalStateException("socket closed") }
+            addInterceptor(LoggerInterceptor(logger = lines::add))
+        }
+
+        val thrown = assertFailsWith<IllegalStateException> {
+            client.execute(
+                NetworkRequest(
+                    method = HttpMethod.GET,
+                    url = "https://example.test/items",
+                ),
+            )
+        }
+
+        assertEquals("socket closed", thrown.message)
+        assertTrue(lines.any { it.contains("GET https://example.test/items") })
+        assertTrue(lines.any { it.contains("<! IllegalStateException") && it.contains("socket closed") })
+        assertFalse(lines.any { it.startsWith("<-") })
+    }
+
+    @Test
+    fun basicLevelDoesNotLogCancellationAsFailure() = runTest {
+        val lines = mutableListOf<String>()
+        val client = CaterKtor {
+            transport = Transport { throw CancellationException("call cancelled") }
+            addInterceptor(LoggerInterceptor(logger = lines::add))
+        }
+
+        val thrown = assertFailsWith<CancellationException> {
+            client.execute(
+                NetworkRequest(
+                    method = HttpMethod.GET,
+                    url = "https://example.test/items",
+                ),
+            )
+        }
+
+        assertEquals("call cancelled", thrown.message)
+        assertTrue(lines.any { it.contains("GET https://example.test/items") })
+        assertFalse(lines.any { it.startsWith("<!") })
+        assertFalse(lines.any { it.startsWith("<-") })
     }
 
     @Test

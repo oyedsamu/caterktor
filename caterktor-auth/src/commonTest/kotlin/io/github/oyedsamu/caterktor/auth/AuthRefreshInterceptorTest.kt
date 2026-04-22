@@ -11,6 +11,7 @@ import io.github.oyedsamu.caterktor.HttpStatus
 import io.github.oyedsamu.caterktor.NetworkError
 import io.github.oyedsamu.caterktor.NetworkResponse
 import io.github.oyedsamu.caterktor.NetworkResult
+import io.github.oyedsamu.caterktor.ResponseBody
 import io.github.oyedsamu.caterktor.Transport
 import io.github.oyedsamu.caterktor.get
 import kotlinx.coroutines.CancellationException
@@ -20,6 +21,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.Buffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -143,6 +145,34 @@ class AuthRefreshInterceptorTest {
             assertIs<AuthRefreshFailedException>(error.cause)
         }
         assertEquals(1, refreshCalls.value())
+    }
+
+    @Test
+    fun failedRefreshDropsOversizedUnauthorizedBody() = runTest {
+        val client = CaterKtor {
+            transport = Transport {
+                NetworkResponse(
+                    status = HttpStatus.Unauthorized,
+                    headers = Headers { set("Content-Type", "text/plain") },
+                    body = sourceBody(
+                        text = "not-read-because-content-length-exceeds-default-cap",
+                        contentLength = Long.MAX_VALUE,
+                    ),
+                )
+            }
+            addInterceptor(
+                AuthRefreshInterceptor(
+                    tokenProvider = { "old" },
+                    refreshToken = { error("refresh backend down") },
+                ),
+            )
+        }
+
+        val result = client.get<Unit>("https://example.test/private")
+
+        val failure = assertIs<NetworkResult.Failure>(result)
+        val error = assertIs<NetworkError.Http>(failure.error)
+        assertEquals(null, error.body.raw)
     }
 
     @Test
@@ -284,6 +314,15 @@ class AuthRefreshInterceptorTest {
 
     private fun response(status: HttpStatus): NetworkResponse =
         NetworkResponse(status = status, headers = Headers.Empty, body = byteArrayOf())
+
+    private fun sourceBody(text: String, contentLength: Long?): ResponseBody =
+        ResponseBody.Source(
+            sourceFactory = {
+                Buffer().also { it.write(text.encodeToByteArray()) }
+            },
+            contentType = "text/plain",
+            contentLength = contentLength,
+        )
 
     private class SuspendCounter {
         private val mutex = Mutex()

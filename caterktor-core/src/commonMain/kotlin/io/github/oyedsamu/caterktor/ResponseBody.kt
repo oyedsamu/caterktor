@@ -1,9 +1,11 @@
 package io.github.oyedsamu.caterktor
 
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.io.Buffer
 import kotlinx.io.Source as IoSource
 import kotlinx.io.readByteArray
 
+internal const val DEFAULT_MAX_BODY_DECODE_BYTES: Int = 10 * 1024 * 1024
 private const val RESPONSE_BODY_BUFFER_CHUNK_SIZE: Int = 8 * 1024
 
 /**
@@ -128,6 +130,18 @@ public fun ResponseBody.buffered(maxBytes: Int): ResponseBody.Bytes {
         opened.close()
     }
 }
+
+internal fun ResponseBody.rawBodyOrNull(
+    maxBytes: Int = DEFAULT_MAX_BODY_DECODE_BYTES,
+    contentTypeOverride: String? = null,
+): RawBody? =
+    try {
+        buffered(maxBytes).rawBody(contentTypeOverride)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    }
 
 internal class ResponseBodyTooLargeException(
     actualBytes: Long?,

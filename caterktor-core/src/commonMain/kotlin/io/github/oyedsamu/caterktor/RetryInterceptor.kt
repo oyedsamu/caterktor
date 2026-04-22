@@ -81,7 +81,9 @@ public class RetryInterceptor(
                             status = raw.status,
                             headers = raw.headers,
                             body = ErrorBody(
-                                raw = raw.rawBody(),
+                                raw = raw.body.rawBodyOrNull(
+                                    contentTypeOverride = raw.headers["Content-Type"],
+                                ),
                                 parsed = null,
                             ),
                         )

@@ -322,8 +322,10 @@ deprecation lifecycle: `WARNING` for one minor, `ERROR` for one minor, then remo
 ## Known limitations
 
 - **Streaming decode:** response bodies are buffered into a `ByteArray` before typed decode.
-  The default cap is 10 MiB, configurable via `CaterKtorBuilder.maxBodyDecodeBytes()`. Bodies
-  without a known `Content-Length` (chunked transfer) are not guarded by this limit.
+  The default cap is 10 MiB, configurable via `CaterKtorBuilder.maxBodyDecodeBytes()`, and
+  core enforces it for both known-length and unknown-length `ResponseBody.Source` values.
+  The current Ktor transport still reads each HTTP response into memory before constructing
+  a `NetworkResponse`, so large streaming downloads remain a deferred feature.
 - **OTel adapter (`caterktor-otel`) and Ktorfit adapter (`caterktor-ktorfit`)** are not yet released.
   `caterktor-otel` is scaffolded; `caterktor-ktorfit` follows in a later wave.
 - The `@ExperimentalCaterktor` opt-in is required on all public API until stabilized at `0.3.0`.

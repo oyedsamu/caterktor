@@ -55,7 +55,7 @@ public class CaterKtorBuilder internal constructor() {
     private var _defaultUnwrapper: ResponseUnwrapper? = null
     private var _defaultEnveloper: RequestEnveloper? = null
     private var _transportFinalizer: ((Transport) -> Transport)? = null
-    private var _maxBodyDecodeBytes: Int = 10 * 1024 * 1024
+    private var _maxBodyDecodeBytes: Int = DEFAULT_MAX_BODY_DECODE_BYTES
 
     /**
      * Configure per-attempt and advisory connection timeouts.
@@ -225,9 +225,15 @@ public class CaterKtorBuilder internal constructor() {
      * Set the maximum number of bytes that [NetworkClient] will materialise into a [ByteArray]
      * when decoding a response body via [BodyConverter.decode].
      *
-     * When the response `Content-Length` header is present and exceeds this limit, decoding
-     * is short-circuited with a [NetworkError.Serialization] failure. Bodies without a
-     * known `Content-Length` (e.g. chunked transfer) are not guarded by this check.
+     * Decoding is short-circuited with a [NetworkError.Serialization] failure if
+     * the body exceeds this limit. Unknown-length [ResponseBody.Source] values are
+     * bounded by reading one byte past the limit, so chunked/source bodies do not
+     * bypass this check once they reach core.
+     *
+     * Transport implementations may still choose to buffer a full response before
+     * constructing [NetworkResponse]. The current Ktor transport does this for
+     * responses, so use this limit as a typed-decoding guard, not as a complete
+     * large-download safety mechanism.
      *
      * Defaults to 10 MiB (10 × 1024 × 1024 bytes).
      *

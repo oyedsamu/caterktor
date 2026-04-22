@@ -12,7 +12,10 @@ import io.github.oyedsamu.caterktor.NetworkErrorException
 import io.github.oyedsamu.caterktor.NetworkRequest
 import io.github.oyedsamu.caterktor.NetworkResponse
 import io.github.oyedsamu.caterktor.PrivilegedInterceptor
+import io.github.oyedsamu.caterktor.RawBody
+import io.github.oyedsamu.caterktor.ResponseBody
 import io.github.oyedsamu.caterktor.TimeoutKind
+import io.github.oyedsamu.caterktor.buffered
 import io.github.oyedsamu.caterktor.proceedForAttempt
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
@@ -193,7 +196,10 @@ public class AuthRefreshInterceptor(
             NetworkError.Http(
                 status = HttpStatus.Unauthorized,
                 headers = response.headers,
-                body = ErrorBody(raw = response.rawBody(), parsed = null),
+                body = ErrorBody(
+                    raw = response.body.rawBodyOrNull(response.headers["Content-Type"]),
+                    parsed = null,
+                ),
                 cause = cause,
             ),
         )
@@ -221,3 +227,14 @@ public class AuthRefreshInterceptor(
         data class Failure(val cause: Exception) : RefreshOutcome
     }
 }
+
+private const val DEFAULT_ERROR_BODY_BYTES: Int = 10 * 1024 * 1024
+
+private fun ResponseBody.rawBodyOrNull(contentTypeOverride: String?): RawBody? =
+    try {
+        buffered(DEFAULT_ERROR_BODY_BYTES).rawBody(contentTypeOverride)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    }

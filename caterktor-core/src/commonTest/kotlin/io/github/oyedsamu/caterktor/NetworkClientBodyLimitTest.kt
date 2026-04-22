@@ -99,6 +99,27 @@ class NetworkClientBodyLimitTest {
         assertEquals("hello", success.body)
     }
 
+    @Test
+    fun httpErrorBodyBeyondDecodeLimitIsDropped() = runTest {
+        val client = CaterKtor {
+            maxBodyDecodeBytes(5)
+            transport = Transport {
+                NetworkResponse(
+                    status = HttpStatus.InternalServerError,
+                    headers = Headers { set("Content-Type", "text/plain") },
+                    body = sourceBody("123456", contentLength = null),
+                )
+            }
+            addConverter(stringConverter { raw -> raw.asString() })
+        }
+
+        val result = client.get<String>("https://example.test/error")
+
+        val failure = assertIs<NetworkResult.Failure>(result)
+        val error = assertIs<NetworkError.Http>(failure.error)
+        assertEquals(null, error.body.raw)
+    }
+
     private fun sourceBody(text: String, contentLength: Long?): ResponseBody =
         ResponseBody.Source(
             sourceFactory = {

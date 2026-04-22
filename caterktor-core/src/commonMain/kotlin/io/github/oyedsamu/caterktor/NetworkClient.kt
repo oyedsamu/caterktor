@@ -53,12 +53,14 @@ public class NetworkClient internal constructor(
      * [NetworkError.Serialization] failure rather than attempting to allocate a potentially
      * heap-busting buffer.
      *
-     * Bodies whose `Content-Length` is absent (e.g. chunked transfer) are not guarded by this
-     * check — the limit only applies when the server advertises a known size up-front.
+     * Unknown-length [ResponseBody.Source] values are bounded by reading one byte
+     * past this limit. Transport implementations that buffer an entire response
+     * before constructing [NetworkResponse] can still allocate before this guard
+     * runs; the current Ktor transport is documented with that limitation.
      *
      * Defaults to 10 MiB (10 × 1024 × 1024 bytes). Set via [CaterKtorBuilder.maxBodyDecodeBytes].
      */
-    @PublishedApi internal val maxBodyDecodeBytes: Int = 10 * 1024 * 1024,
+    @PublishedApi internal val maxBodyDecodeBytes: Int = DEFAULT_MAX_BODY_DECODE_BYTES,
 ) {
 
     private val _events: MutableSharedFlow<NetworkEvent> = MutableSharedFlow(
@@ -185,7 +187,7 @@ internal suspend fun <T : Any> NetworkClient.call(
         tryEmitEvent(NetworkEvent.ResponseReceived(requestId, response.status, response.headers, durationMs, attempts))
 
         if (response.status.isClientError || response.status.isServerError) {
-            val raw = response.rawBody()
+            val raw = response.body.rawBodyOrNull(maxBodyDecodeBytes, response.headers["Content-Type"])
             val error = NetworkError.Http(
                 status = response.status,
                 headers = response.headers,
@@ -249,7 +251,7 @@ private fun <T : Any> NetworkClient.decodeResponse(
         ?: return NetworkResult.Failure(
             error = NetworkError.Serialization(
                 phase = SerializationPhase.Decoding,
-                rawBody = response.body.rawBodyForFailure(maxBodyDecodeBytes, contentTypeHeader),
+                rawBody = response.body.rawBodyOrNull(maxBodyDecodeBytes, contentTypeHeader),
                 cause = IllegalStateException(
                     "No BodyConverter registered for content-type '$bareContentType'. " +
                         "Register one via CaterKtorBuilder.addConverter().",
@@ -334,15 +336,3 @@ private fun NetworkRequest.withContentNegotiationAccept(acceptHeader: String?): 
     if (acceptHeader == null || "Accept" in headers) return this
     return copy(headers = headers + Headers { set("Accept", acceptHeader) })
 }
-
-private fun ResponseBody.rawBodyForFailure(
-    maxBytes: Int,
-    contentTypeOverride: String?,
-): RawBody? =
-    try {
-        buffered(maxBytes).rawBody(contentTypeOverride)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (_: Exception) {
-        null
-    }

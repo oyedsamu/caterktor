@@ -36,8 +36,10 @@ import io.ktor.http.HttpMethod as KtorHttpMethod
  * path so large request payloads can stream without first materializing a
  * byte array in CaterKtor.
  *
- * Responses are currently exposed as replayable [ResponseBody.Bytes] because
- * this transport uses Ktor's buffered request API.
+	 * Responses are currently exposed as replayable [ResponseBody.Bytes]. This
+	 * means the transport reads the HTTP response into memory before core's typed
+	 * decode limit can run. Large streaming downloads are intentionally deferred
+	 * to a future streaming transport/API.
  *
  * @property httpClient The caller-supplied Ktor client. The exact instance
  *   passed in is retained so that callers can reference it for diagnostics;

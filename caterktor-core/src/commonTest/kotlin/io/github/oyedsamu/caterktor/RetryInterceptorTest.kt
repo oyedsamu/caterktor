@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.launch
+import kotlinx.io.Buffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -97,6 +98,47 @@ class RetryInterceptorTest {
         val failure = assertIs<NetworkResult.Failure>(result)
         assertEquals(2, failure.attempts)
         assertEquals(2, transportCalls)
+    }
+
+    @Test
+    fun retryPolicySeesBoundedHttpErrorBody() = runTest {
+        var observedRaw: RawBody? = null
+        val policy = object : RetryPolicy {
+            override fun shouldRetry(
+                attempt: Int,
+                request: NetworkRequest,
+                response: NetworkResponse?,
+                error: NetworkError,
+            ): Boolean {
+                observedRaw = assertIs<NetworkError.Http>(error).body.raw
+                return false
+            }
+
+            override suspend fun computeDelayMs(
+                attempt: Int,
+                request: NetworkRequest,
+                response: NetworkResponse?,
+                error: NetworkError,
+            ): Long = 0L
+        }
+        val client = CaterKtor {
+            transport = Transport {
+                NetworkResponse(
+                    status = HttpStatus.ServiceUnavailable,
+                    headers = Headers { set("Content-Type", "text/plain") },
+                    body = sourceBody(
+                        text = "not-read-because-content-length-exceeds-default-cap",
+                        contentLength = Long.MAX_VALUE,
+                    ),
+                )
+            }
+            addInterceptor(RetryInterceptor(maxAttempts = 2, policy = policy))
+        }
+
+        val response = client.execute(NetworkRequest(HttpMethod.GET, "https://example.test/retry"))
+
+        assertEquals(HttpStatus.ServiceUnavailable, response.status)
+        assertEquals(null, observedRaw)
     }
 
     @Test
@@ -230,4 +272,13 @@ class RetryInterceptorTest {
 
     private fun response(status: HttpStatus): NetworkResponse =
         NetworkResponse(status = status, headers = Headers.Empty, body = byteArrayOf())
+
+    private fun sourceBody(text: String, contentLength: Long?): ResponseBody =
+        ResponseBody.Source(
+            sourceFactory = {
+                Buffer().also { it.write(text.encodeToByteArray()) }
+            },
+            contentType = "text/plain",
+            contentLength = contentLength,
+        )
 }

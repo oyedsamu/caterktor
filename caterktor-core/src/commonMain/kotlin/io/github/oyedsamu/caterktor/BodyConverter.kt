@@ -15,11 +15,11 @@ import kotlin.reflect.KType
  *
  * ## Buffering
  *
- * The current converter contract is byte-based. [decode] receives a fully
- * buffered [RawBody], and [NetworkClient] enforces
- * [CaterKtorBuilder.maxBodyDecodeBytes] before materialising response bytes for
- * typed decoding. Streaming consumers should use [NetworkResponse.body]
- * directly until a streaming converter API is introduced.
+	 * The current converter contract is byte-based. [decode] receives a fully
+	 * buffered [RawBody], and [NetworkClient] enforces
+	 * [CaterKtorBuilder.maxBodyDecodeBytes] while materialising [ResponseBody]
+	 * values for typed decoding. Streaming consumers should use [NetworkResponse.body]
+	 * directly until a streaming converter API is introduced.
  *
  * ## Content-type matching
  *
