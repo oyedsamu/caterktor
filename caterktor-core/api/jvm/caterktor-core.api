@@ -7,17 +7,28 @@ public abstract interface class io/github/oyedsamu/caterktor/BodyConverter {
 public final class io/github/oyedsamu/caterktor/CaterKtorBuilder {
 	public final fun addConverter (Lio/github/oyedsamu/caterktor/BodyConverter;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun addInterceptor (Lio/github/oyedsamu/caterktor/Interceptor;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
+	public final fun enveloper (Lio/github/oyedsamu/caterktor/RequestEnveloper;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun getBaseUrl ()Ljava/lang/String;
 	public final fun getConverters ()Ljava/util/List;
+	public final fun getDefaultEnveloper ()Lio/github/oyedsamu/caterktor/RequestEnveloper;
+	public final fun getDefaultUnwrapper ()Lio/github/oyedsamu/caterktor/ResponseUnwrapper;
 	public final fun getInterceptors ()Ljava/util/List;
 	public final fun getTimeoutConfig ()Lio/github/oyedsamu/caterktor/TimeoutConfig;
 	public final fun getTransport ()Lio/github/oyedsamu/caterktor/Transport;
+	public final fun ktor (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun setBaseUrl (Ljava/lang/String;)V
 	public final fun setTransport (Lio/github/oyedsamu/caterktor/Transport;)V
 	public final fun timeout (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
+	public final fun unwrapper (Lio/github/oyedsamu/caterktor/ResponseUnwrapper;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 }
 
 public abstract interface annotation class io/github/oyedsamu/caterktor/CaterKtorDsl : java/lang/annotation/Annotation {
+}
+
+public final class io/github/oyedsamu/caterktor/CaterKtorKeys {
+	public static final field ENVELOPER Ljava/lang/String;
+	public static final field INSTANCE Lio/github/oyedsamu/caterktor/CaterKtorKeys;
+	public static final field UNWRAPPER Ljava/lang/String;
 }
 
 public final class io/github/oyedsamu/caterktor/CaterKtorKt {
@@ -195,6 +206,8 @@ public final class io/github/oyedsamu/caterktor/NetworkClient {
 	public static synthetic fun execute$default (Lio/github/oyedsamu/caterktor/NetworkClient;Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun getBaseUrl ()Ljava/lang/String;
 	public final fun getConverters ()Ljava/util/List;
+	public final fun getDefaultEnveloper ()Lio/github/oyedsamu/caterktor/RequestEnveloper;
+	public final fun getDefaultUnwrapper ()Lio/github/oyedsamu/caterktor/ResponseUnwrapper;
 	public final fun getEvents ()Lkotlinx/coroutines/flow/SharedFlow;
 	public final fun tryEmitEvent (Lio/github/oyedsamu/caterktor/NetworkEvent;)V
 }
@@ -489,6 +502,24 @@ public final class io/github/oyedsamu/caterktor/RequestBody$Bytes : io/github/oy
 	public fun <init> ([BLjava/lang/String;)V
 	public final fun getBytes ()[B
 	public final fun getContentType ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/oyedsamu/caterktor/RequestEnveloper {
+	public static final field Companion Lio/github/oyedsamu/caterktor/RequestEnveloper$Companion;
+	public abstract fun envelop ([BLjava/lang/String;)Lio/github/oyedsamu/caterktor/RequestBody;
+}
+
+public final class io/github/oyedsamu/caterktor/RequestEnveloper$Companion {
+	public final fun getNone ()Lio/github/oyedsamu/caterktor/RequestEnveloper;
+}
+
+public abstract interface class io/github/oyedsamu/caterktor/ResponseUnwrapper {
+	public static final field Companion Lio/github/oyedsamu/caterktor/ResponseUnwrapper$Companion;
+	public abstract fun unwrap ([BLjava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)[B
+}
+
+public final class io/github/oyedsamu/caterktor/ResponseUnwrapper$Companion {
+	public final fun getRaw ()Lio/github/oyedsamu/caterktor/ResponseUnwrapper;
 }
 
 public final class io/github/oyedsamu/caterktor/RetryInterceptor : io/github/oyedsamu/caterktor/PrivilegedInterceptor {

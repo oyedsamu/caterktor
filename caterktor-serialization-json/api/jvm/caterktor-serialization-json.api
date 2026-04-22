@@ -1,3 +1,19 @@
+public final class io/github/oyedsamu/caterktor/serialization/json/DataFieldEnveloper : io/github/oyedsamu/caterktor/RequestEnveloper {
+	public fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/Json;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/Json;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun envelop ([BLjava/lang/String;)Lio/github/oyedsamu/caterktor/RequestBody;
+	public final fun getField ()Ljava/lang/String;
+	public final fun getJson ()Lkotlinx/serialization/json/Json;
+}
+
+public final class io/github/oyedsamu/caterktor/serialization/json/DataFieldUnwrapper : io/github/oyedsamu/caterktor/ResponseUnwrapper {
+	public fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/Json;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/Json;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getField ()Ljava/lang/String;
+	public final fun getJson ()Lkotlinx/serialization/json/Json;
+	public fun unwrap ([BLjava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)[B
+}
+
 public final class io/github/oyedsamu/caterktor/serialization/json/KotlinxJsonConverter : io/github/oyedsamu/caterktor/BodyConverter {
 	public fun <init> ()V
 	public fun <init> (Lkotlinx/serialization/json/Json;)V
@@ -6,5 +22,14 @@ public final class io/github/oyedsamu/caterktor/serialization/json/KotlinxJsonCo
 	public fun encode (Ljava/lang/Object;Lkotlin/reflect/KType;Ljava/lang/String;)[B
 	public final fun getJson ()Lkotlinx/serialization/json/Json;
 	public fun supports (Ljava/lang/String;)Z
+}
+
+public final class io/github/oyedsamu/caterktor/serialization/json/PagedUnwrapper : io/github/oyedsamu/caterktor/ResponseUnwrapper {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/Json;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/Json;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getItemsField ()Ljava/lang/String;
+	public final fun getJson ()Lkotlinx/serialization/json/Json;
+	public fun unwrap ([BLjava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)[B
 }
 

@@ -42,6 +42,8 @@ public class NetworkClient internal constructor(
     @PublishedApi internal val converters: List<BodyConverter> = emptyList(),
     @PublishedApi internal val baseUrl: String? = null,
     internal val timeoutConfig: TimeoutConfig? = null,
+    @PublishedApi internal val defaultUnwrapper: ResponseUnwrapper? = null,
+    @PublishedApi internal val defaultEnveloper: RequestEnveloper? = null,
 ) {
 
     private val _events: MutableSharedFlow<NetworkEvent> = MutableSharedFlow(
@@ -132,6 +134,9 @@ internal suspend fun <T : Any> NetworkClient.call(
     val mark = TimeSource.Monotonic.markNow()
     tryEmitEvent(NetworkEvent.CallStart(requestId, request))
 
+    val unwrapper: ResponseUnwrapper? =
+        (request.tags[CaterKtorKeys.UNWRAPPER] as? ResponseUnwrapper) ?: defaultUnwrapper
+
     // Compute the effective timeout: the minimum of requestTimeoutMs and
     // the remaining millis until the deadline (if set).
     val requestTimeoutMs = timeoutConfig?.requestTimeoutMs
@@ -188,7 +193,7 @@ internal suspend fun <T : Any> NetworkClient.call(
                 requestId = requestId,
             )
         } else {
-            val result = decodeResponse<T>(response, responseType, durationMs, requestId)
+            val result = decodeResponse<T>(response, responseType, durationMs, requestId, unwrapper)
             when (result) {
                 is NetworkResult.Success ->
                     tryEmitEvent(NetworkEvent.CallSuccess(requestId, result.status, durationMs, 1))
@@ -215,6 +220,7 @@ private fun <T : Any> NetworkClient.decodeResponse(
     responseType: KType,
     durationMs: Long,
     requestId: String,
+    unwrapper: ResponseUnwrapper? = null,
 ): NetworkResult<T> {
     // Unit type means caller doesn't want a body decoded
     if (responseType.classifier == Unit::class) {
@@ -245,7 +251,12 @@ private fun <T : Any> NetworkClient.decodeResponse(
             requestId = requestId,
         )
     return try {
-        val raw = RawBody(response.body, contentTypeHeader)
+        val bodyBytes: ByteArray = if (unwrapper != null) {
+            unwrapper.unwrap(response.body, bareContentType.ifEmpty { null }, response)
+        } else {
+            response.body
+        }
+        val raw = RawBody(bodyBytes, contentTypeHeader)
         val body = converter.decode<T>(raw, responseType)
         NetworkResult.Success(
             body = body,

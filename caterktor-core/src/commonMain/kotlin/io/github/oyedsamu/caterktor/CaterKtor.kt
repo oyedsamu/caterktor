@@ -1,5 +1,7 @@
 package io.github.oyedsamu.caterktor
 
+import io.ktor.client.HttpClientConfig
+
 /**
  * Build a [NetworkClient] via DSL.
  *
@@ -50,6 +52,9 @@ public class CaterKtorBuilder internal constructor() {
     private val _interceptors: MutableList<Interceptor> = mutableListOf()
     private val _converters: MutableList<BodyConverter> = mutableListOf()
     private var _timeoutConfig: TimeoutConfig? = null
+    private var _defaultUnwrapper: ResponseUnwrapper? = null
+    private var _defaultEnveloper: RequestEnveloper? = null
+    private var _ktorBlock: (HttpClientConfig<*>.() -> Unit)? = null
 
     /**
      * Configure per-attempt and advisory connection timeouts.
@@ -108,17 +113,79 @@ public class CaterKtorBuilder internal constructor() {
     public val converters: List<BodyConverter>
         get() = _converters.toList()
 
+    /** The default [ResponseUnwrapper], or `null` if none was set. */
+    public val defaultUnwrapper: ResponseUnwrapper?
+        get() = _defaultUnwrapper
+
+    /** The default [RequestEnveloper], or `null` if none was set. */
+    public val defaultEnveloper: RequestEnveloper?
+        get() = _defaultEnveloper
+
+    /**
+     * Set the default [ResponseUnwrapper] applied to every response decoded by this client.
+     *
+     * The unwrapper runs after the transport returns raw bytes and before [BodyConverter.decode]
+     * is called. A per-request override via [CaterKtorKeys.UNWRAPPER] in [NetworkRequest.tags]
+     * takes precedence over this default.
+     */
+    public fun unwrapper(unwrapper: ResponseUnwrapper): CaterKtorBuilder = apply {
+        _defaultUnwrapper = unwrapper
+    }
+
+    /**
+     * Set the default [RequestEnveloper] applied to every request body encoded by this client.
+     *
+     * The enveloper runs after [BodyConverter.encode] produces bytes and before [RequestBody]
+     * is built. A per-request override via [CaterKtorKeys.ENVELOPER] in [NetworkRequest.tags]
+     * takes precedence over this default.
+     */
+    public fun enveloper(enveloper: RequestEnveloper): CaterKtorBuilder = apply {
+        _defaultEnveloper = enveloper
+    }
+
+    /**
+     * Apply additional configuration to the underlying Ktor [HttpClient].
+     *
+     * This is the K4 escape hatch: use it to install Ktor plugins (caching, logging,
+     * content-encoding, etc.) that CaterKtor does not surface directly.
+     *
+     * The block is applied **after** the engine-specific factory configures the client.
+     * Multiple calls accumulate — each block is applied in registration order.
+     *
+     * Only effective when [transport] is a [KtorTransport]. Silently ignored otherwise.
+     *
+     * ```kotlin
+     * val client = CaterKtor {
+     *     transport = OkHttpTransport()
+     *     ktor {
+     *         install(HttpCache)
+     *     }
+     * }
+     * ```
+     */
+    public fun ktor(block: HttpClientConfig<*>.() -> Unit): CaterKtorBuilder = apply {
+        val existing = _ktorBlock
+        _ktorBlock = if (existing == null) block else ({ existing(); block() })
+    }
+
     internal fun build(): NetworkClient {
         val t = checkNotNull(transport) {
             "CaterKtor: `transport` must be configured before build. " +
                 "Provide one directly or install a caterktor-engine-* module."
         }
+        // K4: apply any ktor { } blocks on top of the transport's HttpClient
+        val finalTransport: Transport = _ktorBlock?.let { block ->
+            if (t is KtorTransport) KtorTransport(t.httpClient.config(block)) else t
+        } ?: t
+
         return NetworkClient(
-            transport = t,
+            transport = finalTransport,
             interceptors = _interceptors.toList(),
             converters = _converters.toList(),
             baseUrl = baseUrl,
             timeoutConfig = _timeoutConfig,
+            defaultUnwrapper = _defaultUnwrapper,
+            defaultEnveloper = _defaultEnveloper,
         )
     }
 }

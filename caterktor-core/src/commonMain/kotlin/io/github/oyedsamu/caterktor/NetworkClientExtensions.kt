@@ -188,8 +188,13 @@ public suspend fun <T : Any, B : Any> NetworkClient.callWithBody(
             attempts = 1,
             requestId = generateRequestId(),
         )
-    val encodedBytes = try {
-        converter.encode(body, bodyType, contentType)
+    val requestBody: RequestBody = try {
+        val encodedBytes = converter.encode(body, bodyType, contentType)
+        // Resolve enveloper: per-request tag takes precedence over per-client default
+        val enveloper: RequestEnveloper? =
+            (tags[CaterKtorKeys.ENVELOPER] as? RequestEnveloper) ?: defaultEnveloper
+        enveloper?.envelop(encodedBytes, contentType)
+            ?: RequestBody.Bytes(encodedBytes, contentType)
     } catch (e: Exception) {
         return NetworkResult.Failure(
             error = NetworkError.Serialization(
@@ -202,7 +207,6 @@ public suspend fun <T : Any, B : Any> NetworkClient.callWithBody(
             requestId = generateRequestId(),
         )
     }
-    val requestBody = RequestBody.Bytes(encodedBytes, contentType)
     val request = NetworkRequest(method, resolvedUrl, headers, requestBody, tags)
     return call(request, responseType, deadline)
 }
