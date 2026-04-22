@@ -144,6 +144,7 @@ class NetworkErrorTest {
             NetworkError.Timeout(TimeoutKind.Connect),
             NetworkError.Serialization(SerializationPhase.Encoding),
             NetworkError.Protocol("x"),
+            NetworkError.CircuitOpen("default", CircuitBreakerState.Open),
             NetworkError.Unknown(RuntimeException()),
         )
 
@@ -156,12 +157,13 @@ class NetworkErrorTest {
                 is NetworkError.Timeout -> "Timeout"
                 is NetworkError.Serialization -> "Serialization"
                 is NetworkError.Protocol -> "Protocol"
+                is NetworkError.CircuitOpen -> "CircuitOpen"
                 is NetworkError.Unknown -> "Unknown"
             }
         }
 
         assertEquals(
-            listOf("Http", "ConnectionFailed", "Timeout", "Serialization", "Protocol", "Unknown"),
+            listOf("Http", "ConnectionFailed", "Timeout", "Serialization", "Protocol", "CircuitOpen", "Unknown"),
             tags,
         )
 

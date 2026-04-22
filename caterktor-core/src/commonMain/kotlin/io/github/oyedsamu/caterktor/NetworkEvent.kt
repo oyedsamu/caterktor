@@ -5,7 +5,8 @@ package io.github.oyedsamu.caterktor
  * processes. Collect [NetworkClient.events] to receive them.
  *
  * Events are emitted in order within a single request:
- * [CallStart] → [ResponseReceived] → [CallSuccess] or [CallFailure].
+ * [CallStart] → optional interceptor events → [ResponseReceived] →
+ * [CallSuccess] or [CallFailure].
  * If the transport throws before a response is received (timeout, connection
  * failure), only [CallStart] and [CallFailure] are emitted.
  *
@@ -84,5 +85,19 @@ public sealed interface NetworkEvent {
         public val error: NetworkError,
         public val durationMs: Long,
         public val attempts: Int,
+    ) : NetworkEvent
+
+    /**
+     * A circuit breaker changed state while processing this request.
+     *
+     * @property name Human-readable breaker name.
+     * @property from Previous state.
+     * @property to New state.
+     */
+    public data class CircuitBreakerTransition(
+        override val requestId: String,
+        public val name: String,
+        public val from: CircuitBreakerState,
+        public val to: CircuitBreakerState,
     ) : NetworkEvent
 }

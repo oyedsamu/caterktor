@@ -81,6 +81,13 @@ public class NetworkClient internal constructor(
     public suspend fun execute(
         request: NetworkRequest,
         deadline: Instant? = null,
+    ): NetworkResponse =
+        execute(request, deadline, generateRequestId())
+
+    internal suspend fun execute(
+        request: NetworkRequest,
+        deadline: Instant? = null,
+        requestId: String,
     ): NetworkResponse {
         val callState = coroutineContext[CallExecutionState]
         callState?.recordAttempt(1)
@@ -93,6 +100,8 @@ public class NetworkClient internal constructor(
             transport = transport,
             callState = callState,
             timeoutConfig = timeoutConfig,
+            requestId = requestId,
+            eventSink = ::tryEmitEvent,
         )
         return chain.proceed(request)
     }
@@ -154,7 +163,7 @@ internal suspend fun <T : Any> NetworkClient.call(
     val callState = CallExecutionState()
     return try {
         val response: NetworkResponse = withContext(callState) {
-            execute(requestForCall, deadline)
+            execute(requestForCall, deadline, requestId)
         }
         val attempts = callState.attempts
 

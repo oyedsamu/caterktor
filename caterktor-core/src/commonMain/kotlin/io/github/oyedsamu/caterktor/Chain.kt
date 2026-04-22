@@ -47,6 +47,17 @@ public interface Chain {
      */
     public val deadline: Instant?
 
+    /** Correlation ID linking events for this logical request. */
+    public val requestId: String
+
+    /**
+     * Emit an event for this logical request without blocking the pipeline.
+     *
+     * Interceptors should use this for structured lifecycle events that belong
+     * on [NetworkClient.events].
+     */
+    public fun emitEvent(event: NetworkEvent)
+
     /**
      * Dispatch to the next stage with the given (possibly rewritten) request.
      *
@@ -82,6 +93,8 @@ internal class RealChain(
     private val transport: Transport,
     private val callState: CallExecutionState?,
     private val timeoutConfig: TimeoutConfig?,
+    override val requestId: String,
+    private val eventSink: (NetworkEvent) -> Unit,
 ) : Chain {
     private var calls: Int = 0
 
@@ -115,8 +128,14 @@ internal class RealChain(
             transport = transport,
             callState = callState,
             timeoutConfig = timeoutConfig,
+            requestId = requestId,
+            eventSink = eventSink,
         )
         return interceptors[index].intercept(next)
+    }
+
+    override fun emitEvent(event: NetworkEvent) {
+        eventSink(event)
     }
 
     private suspend fun executeTransportAttempt(request: NetworkRequest): NetworkResponse {

@@ -87,6 +87,18 @@ public sealed interface NetworkError {
     ) : NetworkError
 
     /**
+     * A circuit breaker rejected the request before it reached the transport.
+     *
+     * @property name Human-readable breaker name.
+     * @property state The breaker state that rejected the request.
+     */
+    public data class CircuitOpen(
+        public val name: String,
+        public val state: CircuitBreakerState,
+        override val cause: Throwable? = null,
+    ) : NetworkError
+
+    /**
      * An error that does not fit any other category. [cause] is guaranteed
      * non-null for this variant.
      *

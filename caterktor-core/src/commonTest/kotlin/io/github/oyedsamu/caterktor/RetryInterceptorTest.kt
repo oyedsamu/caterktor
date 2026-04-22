@@ -10,6 +10,8 @@ import kotlinx.coroutines.launch
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class RetryInterceptorTest {
 
@@ -152,6 +154,78 @@ class RetryInterceptorTest {
 
         assertEquals(HttpStatus.NoContent, response.status)
         assertEquals(2, transportCalls)
+    }
+
+    @Test
+    fun exponentialBackoffDefaultsRetry502503504() {
+        val policy = ExponentialBackoffPolicy()
+        val request = NetworkRequest(HttpMethod.GET, "https://example.test/retry")
+
+        for (status in listOf(HttpStatus.BadGateway, HttpStatus.ServiceUnavailable, HttpStatus.GatewayTimeout)) {
+            val response = response(status)
+            val error = NetworkError.Http(status, response.headers, ErrorBody.Empty)
+            assertTrue(policy.shouldRetry(1, request, response, error), "expected retry for ${status.code}")
+        }
+    }
+
+    @Test
+    fun exponentialBackoffUsesFullJitterWithInjectableRandom() = runTest {
+        val policy = ExponentialBackoffPolicy(
+            baseDelayMs = 1_000L,
+            maxDelayMs = 1_000L,
+            randomDouble = { 0.5 },
+        )
+
+        val delayMs = policy.computeDelayMs(
+            attempt = 1,
+            request = NetworkRequest(HttpMethod.GET, "https://example.test/retry"),
+            response = null,
+            error = NetworkError.Timeout(TimeoutKind.Request),
+        )
+
+        assertEquals(500L, delayMs)
+    }
+
+    @Test
+    fun exponentialBackoffHonorsDecimalRetryAfterSeconds() = runTest {
+        val policy = ExponentialBackoffPolicy(randomDouble = { 0.0 })
+        val response = NetworkResponse(
+            status = HttpStatus.ServiceUnavailable,
+            headers = Headers { set("Retry-After", "0.2") },
+            body = byteArrayOf(),
+        )
+
+        val delayMs = policy.computeDelayMs(
+            attempt = 1,
+            request = NetworkRequest(HttpMethod.GET, "https://example.test/retry"),
+            response = response,
+            error = NetworkError.Http(response.status, response.headers, ErrorBody.Empty),
+        )
+
+        assertEquals(200L, delayMs)
+    }
+
+    @Test
+    fun exponentialBackoffHonorsRetryAfterHttpDate() = runTest {
+        val nowMs = Instant.parse("2026-04-22T10:00:00Z").toEpochMilliseconds()
+        val policy = ExponentialBackoffPolicy(
+            randomDouble = { 0.0 },
+            currentTimeMillis = { nowMs },
+        )
+        val response = NetworkResponse(
+            status = HttpStatus.ServiceUnavailable,
+            headers = Headers { set("Retry-After", "Wed, 22 Apr 2026 10:00:03 GMT") },
+            body = byteArrayOf(),
+        )
+
+        val delayMs = policy.computeDelayMs(
+            attempt = 1,
+            request = NetworkRequest(HttpMethod.GET, "https://example.test/retry"),
+            response = response,
+            error = NetworkError.Http(response.status, response.headers, ErrorBody.Empty),
+        )
+
+        assertEquals(3_000L, delayMs)
     }
 
     private fun response(status: HttpStatus): NetworkResponse =
