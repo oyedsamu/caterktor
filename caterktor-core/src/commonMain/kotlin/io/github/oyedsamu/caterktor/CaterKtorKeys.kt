@@ -28,4 +28,22 @@ public object CaterKtorKeys {
      * Value must be an instance of [RequestEnveloper].
      */
     public const val ENVELOPER: String = "caterktor.enveloper"
+
+    /**
+     * Tag key to signal that a request should bypass auth interceptors.
+     *
+     * Set this to `true` in [NetworkRequest.tags] to prevent [BearerAuthInterceptor]
+     * (and the upcoming H3 auth-refresh interceptor) from adding or refreshing credentials:
+     *
+     * ```kotlin
+     * client.get<Token>(
+     *     url = "auth/refresh",
+     *     tags = mapOf(CaterKtorKeys.SKIP_AUTH to true),
+     * )
+     * ```
+     *
+     * This is the standard mechanism for avoiding infinite loops when the auth-refresh
+     * interceptor issues its own token-refresh network call through the same client.
+     */
+    public const val SKIP_AUTH: String = "caterktor.skipAuth"
 }

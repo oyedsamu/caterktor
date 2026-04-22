@@ -1,0 +1,10 @@
+public final class io/github/oyedsamu/caterktor/serialization/protobuf/KotlinxProtobufConverter : io/github/oyedsamu/caterktor/BodyConverter {
+	public fun <init> ()V
+	public fun <init> (Lkotlinx/serialization/protobuf/ProtoBuf;)V
+	public synthetic fun <init> (Lkotlinx/serialization/protobuf/ProtoBuf;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun decode (Lio/github/oyedsamu/caterktor/RawBody;Lkotlin/reflect/KType;)Ljava/lang/Object;
+	public fun encode (Ljava/lang/Object;Lkotlin/reflect/KType;Ljava/lang/String;)[B
+	public final fun getProtoBuf ()Lkotlinx/serialization/protobuf/ProtoBuf;
+	public fun supports (Ljava/lang/String;)Z
+}
+

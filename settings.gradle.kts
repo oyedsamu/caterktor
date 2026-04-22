@@ -26,6 +26,7 @@ include(
     ":caterktor-core",
     ":caterktor-serialization-json",
     ":caterktor-serialization-protobuf",
+    ":caterktor-serialization-cbor",
     ":caterktor-engine-okhttp",
     ":caterktor-engine-darwin",
     ":caterktor-engine-cio",

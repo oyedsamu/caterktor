@@ -7,6 +7,9 @@ public abstract interface class io/github/oyedsamu/caterktor/BodyConverter {
 public final class io/github/oyedsamu/caterktor/CaterKtorBuilder {
 	public final fun addConverter (Lio/github/oyedsamu/caterktor/BodyConverter;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun addInterceptor (Lio/github/oyedsamu/caterktor/Interceptor;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
+	public final fun defaultHeader (Ljava/lang/String;Ljava/lang/String;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
+	public final fun defaultHeader (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
+	public final fun defaultHeaders (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun enveloper (Lio/github/oyedsamu/caterktor/RequestEnveloper;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 	public final fun getBaseUrl ()Ljava/lang/String;
 	public final fun getConverters ()Ljava/util/List;
@@ -28,6 +31,7 @@ public abstract interface annotation class io/github/oyedsamu/caterktor/CaterKto
 public final class io/github/oyedsamu/caterktor/CaterKtorKeys {
 	public static final field ENVELOPER Ljava/lang/String;
 	public static final field INSTANCE Lio/github/oyedsamu/caterktor/CaterKtorKeys;
+	public static final field SKIP_AUTH Ljava/lang/String;
 	public static final field UNWRAPPER Ljava/lang/String;
 }
 
@@ -50,6 +54,18 @@ public final class io/github/oyedsamu/caterktor/ConnectionFailureKind : java/lan
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
 	public static fun values ()[Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
+}
+
+public final class io/github/oyedsamu/caterktor/DefaultHeadersBuilder {
+	public fun <init> ()V
+	public final fun set (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun set (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class io/github/oyedsamu/caterktor/DefaultHeadersInterceptor : io/github/oyedsamu/caterktor/Interceptor {
+	public fun <init> (Ljava/util/List;)V
+	public final fun getEntries ()Ljava/util/List;
+	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/github/oyedsamu/caterktor/ErrorBody {

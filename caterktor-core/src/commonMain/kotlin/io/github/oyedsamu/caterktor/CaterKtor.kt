@@ -51,6 +51,7 @@ public class CaterKtorBuilder internal constructor() {
 
     private val _interceptors: MutableList<Interceptor> = mutableListOf()
     private val _converters: MutableList<BodyConverter> = mutableListOf()
+    private val _defaultHeaderEntries: MutableList<Pair<String, suspend () -> String>> = mutableListOf()
     private var _timeoutConfig: TimeoutConfig? = null
     private var _defaultUnwrapper: ResponseUnwrapper? = null
     private var _defaultEnveloper: RequestEnveloper? = null
@@ -103,6 +104,53 @@ public class CaterKtorBuilder internal constructor() {
      */
     public fun addConverter(converter: BodyConverter): CaterKtorBuilder = apply {
         _converters += converter
+    }
+
+    /**
+     * Add a static default header sent with every request.
+     *
+     * The header is only added if the outgoing request does not already contain
+     * a header with the same name (case-insensitive). Per-request headers always win.
+     *
+     * Multiple calls accumulate — each named header is added in registration order.
+     * A [DefaultHeadersInterceptor] is prepended to the pipeline automatically at [build] time.
+     */
+    public fun defaultHeader(name: String, value: String): CaterKtorBuilder = apply {
+        _defaultHeaderEntries += name to { value }
+    }
+
+    /**
+     * Add a dynamic default header evaluated per-request via [provider].
+     *
+     * [provider] is called inside the interceptor pipeline (a coroutine context) so it may
+     * suspend — e.g. to read a token from a store. It is called once per request, not once
+     * at build time. Do not call long-blocking I/O here.
+     *
+     * The header is only added if the outgoing request does not already contain a header
+     * with the same name (case-insensitive).
+     */
+    public fun defaultHeader(name: String, provider: suspend () -> String): CaterKtorBuilder = apply {
+        _defaultHeaderEntries += name to provider
+    }
+
+    /**
+     * Add multiple default headers via a [DefaultHeadersBuilder] DSL block.
+     *
+     * Each entry in the block is evaluated with the same semantics as [defaultHeader].
+     *
+     * ```kotlin
+     * val client = CaterKtor {
+     *     transport = OkHttpTransport()
+     *     defaultHeaders {
+     *         set("X-App-Version", "2.0.0")
+     *         set("X-Platform", "Android")
+     *         set("X-Correlation-Id") { UUID.randomUUID().toString() }
+     *     }
+     * }
+     * ```
+     */
+    public fun defaultHeaders(block: DefaultHeadersBuilder.() -> Unit): CaterKtorBuilder = apply {
+        _defaultHeaderEntries += DefaultHeadersBuilder().apply(block).entries
     }
 
     /** Snapshot of currently registered interceptors, in pipeline order. */
@@ -172,6 +220,10 @@ public class CaterKtorBuilder internal constructor() {
         val t = checkNotNull(transport) {
             "CaterKtor: `transport` must be configured before build. " +
                 "Provide one directly or install a caterktor-engine-* module."
+        }
+        // H1: auto-install DefaultHeadersInterceptor at front if any default headers are configured
+        if (_defaultHeaderEntries.isNotEmpty()) {
+            _interceptors.add(0, DefaultHeadersInterceptor(_defaultHeaderEntries.toList()))
         }
         // K4: apply any ktor { } blocks on top of the transport's HttpClient
         val finalTransport: Transport = _ktorBlock?.let { block ->
