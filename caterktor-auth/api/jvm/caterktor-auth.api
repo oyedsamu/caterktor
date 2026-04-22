@@ -1,3 +1,14 @@
+public final class io/github/oyedsamu/caterktor/auth/AuthBuilder {
+	public fun <init> ()V
+	public final fun bearer (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/auth/AuthBuilder;
+	public final fun bearer (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/auth/AuthBuilder;
+	public final fun refresh (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/auth/AuthBuilder;
+}
+
+public final class io/github/oyedsamu/caterktor/auth/AuthDslKt {
+	public static final fun auth (Lio/github/oyedsamu/caterktor/CaterKtorBuilder;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
+}
+
 public final class io/github/oyedsamu/caterktor/auth/AuthRefreshBudgetExceededException : java/lang/IllegalStateException {
 	public fun <init> (Lio/github/oyedsamu/caterktor/auth/RefreshBudget;)V
 	public final fun getBudget ()Lio/github/oyedsamu/caterktor/auth/RefreshBudget;
@@ -18,11 +29,27 @@ public final class io/github/oyedsamu/caterktor/auth/AuthRefreshInterceptor : io
 	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class io/github/oyedsamu/caterktor/auth/BearerAuthBuilder {
+	public fun <init> ()V
+	public final fun token (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/auth/BearerAuthBuilder;
+	public final fun tokenProvider (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/auth/BearerAuthBuilder;
+}
+
 public final class io/github/oyedsamu/caterktor/auth/BearerAuthInterceptor : io/github/oyedsamu/caterktor/Interceptor {
 	public fun <init> (Ljava/lang/String;)V
 	public fun <init> (Lkotlin/jvm/functions/Function1;)V
 	public final fun getTokenProvider ()Lkotlin/jvm/functions/Function1;
 	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/oyedsamu/caterktor/auth/RefreshAuthBuilder {
+	public fun <init> ()V
+	public final fun budget (IJ)Lio/github/oyedsamu/caterktor/auth/RefreshAuthBuilder;
+	public static synthetic fun budget$default (Lio/github/oyedsamu/caterktor/auth/RefreshAuthBuilder;IJILjava/lang/Object;)Lio/github/oyedsamu/caterktor/auth/RefreshAuthBuilder;
+	public final fun getBudget ()Lio/github/oyedsamu/caterktor/auth/RefreshBudget;
+	public final fun onRefreshFailed (Lkotlin/jvm/functions/Function2;)Lio/github/oyedsamu/caterktor/auth/RefreshAuthBuilder;
+	public final fun refreshToken (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/auth/RefreshAuthBuilder;
+	public final fun setBudget (Lio/github/oyedsamu/caterktor/auth/RefreshBudget;)V
 }
 
 public final class io/github/oyedsamu/caterktor/auth/RefreshBudget {
