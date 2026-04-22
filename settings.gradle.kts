@@ -32,9 +32,13 @@ include(
     ":caterktor-engine-darwin",
     ":caterktor-engine-cio",
     ":caterktor-logging",
-    ":caterktor-otel",
     ":caterktor-auth",
     ":caterktor-testing",
     ":caterktor-sample",
-    ":caterktor-ktorfit",
+    // caterktor-otel: reserved for Wave 12 OpenTelemetry integration.
+    //   Excluded from the build graph until a stable KMP OTel SDK exists.
+    //   Source lives under caterktor-otel/ for tracking purposes.
+    // caterktor-ktorfit: reserved for Wave 13 declarative adapter.
+    //   Excluded from the build graph until Ktorfit's KSP processor supports
+    //   all 9 KMP targets.
 )

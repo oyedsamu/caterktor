@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Instant
@@ -142,13 +143,9 @@ class RetryInterceptorTest {
     }
 
     @Test
-    fun nonIdempotentRetryOptInStillRequiresIdempotencyKey() = runTest {
-        var transportCalls = 0
+    fun nonIdempotentRetryOptInRequiresIdempotencyKeyOrThrows() = runTest {
         val client = CaterKtor {
-            transport = Transport {
-                transportCalls += 1
-                response(HttpStatus.ServiceUnavailable)
-            }
+            transport = Transport { response(HttpStatus.ServiceUnavailable) }
             addInterceptor(
                 RetryInterceptor(
                     maxAttempts = 2,
@@ -158,15 +155,20 @@ class RetryInterceptorTest {
             )
         }
 
-        val response = client.execute(
-            NetworkRequest(
-                method = HttpMethod.POST,
-                url = "https://example.test/create",
-            ),
+        // POST with retryNonIdempotent=true but no Idempotency-Key must throw explicitly
+        // rather than silently proceeding without retry — misconfiguration must be loud.
+        val exception = assertFailsWith<IllegalStateException> {
+            client.execute(
+                NetworkRequest(
+                    method = HttpMethod.POST,
+                    url = "https://example.test/create",
+                ),
+            )
+        }
+        assertTrue(
+            exception.message.orEmpty().contains("Idempotency-Key"),
+            "Exception message should name the missing header, was: ${exception.message}",
         )
-
-        assertEquals(HttpStatus.ServiceUnavailable, response.status)
-        assertEquals(1, transportCalls)
     }
 
     @Test

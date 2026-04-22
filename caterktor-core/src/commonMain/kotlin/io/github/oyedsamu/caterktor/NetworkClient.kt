@@ -323,8 +323,11 @@ private fun <T : Any> NetworkClient.decodeResponse(
 }
 
 /**
- * Generate a 32-char hex correlation ID. Not a UUID — just high-entropy
- * enough to disambiguate in-flight requests for log correlation.
+ * Generate a 32-char hex correlation ID for log correlation only.
+ *
+ * Uses [kotlin.random.Random] — not a cryptographic source and not suitable
+ * as an idempotency key. The sole purpose is to stitch together request,
+ * retry, and response log lines for the same logical call.
  */
 @PublishedApi
 internal fun generateRequestId(): String = buildString(32) {

@@ -1,6 +1,6 @@
 package io.github.oyedsamu.caterktor
 
-import kotlinx.coroutines.CancellationException
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.delay
 
 /**
@@ -44,7 +44,9 @@ import kotlinx.coroutines.delay
  * @property policy          The [RetryPolicy] that controls back-off and
  *   retry eligibility. Default: [ExponentialBackoffPolicy].
  * @property retryNonIdempotent If `true`, non-idempotent methods (POST, PATCH)
- *   are also retried. Default: `false`.
+ *   are also retried — but **only** when the request carries an `Idempotency-Key`
+ *   header. A POST or PATCH without that header will throw [IllegalStateException]
+ *   at runtime to prevent silent duplicate writes. Default: `false`.
  */
 @ExperimentalCaterktor
 public class RetryInterceptor(
@@ -61,10 +63,15 @@ public class RetryInterceptor(
         val request = chain.request
 
         // Non-idempotent guard: POST/PATCH require both caller opt-in and an
-        // Idempotency-Key. Retrying side-effecting calls without a key is too
-        // easy to turn into duplicate writes.
-        if (!request.isRetryableByMethod()) {
-            return chain.proceed(request)
+        // Idempotency-Key header. Fail loudly instead of silently skipping retry
+        // — a missing key with retryNonIdempotent=true is always a misconfiguration.
+        if (!request.method.isIdempotent) {
+            if (!retryNonIdempotent) return chain.proceed(request)
+            check("Idempotency-Key" in request.headers) {
+                "RetryInterceptor: retryNonIdempotent=true but ${request.method.name} request " +
+                    "to ${request.url} has no Idempotency-Key header. Add the header or set " +
+                    "retryNonIdempotent=false to avoid retrying non-idempotent requests."
+            }
         }
 
         var attempt = chain.attempt
