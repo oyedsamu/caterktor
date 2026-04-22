@@ -275,30 +275,6 @@ public final class io/github/oyedsamu/caterktor/KtorTransport : io/github/oyedsa
 	public final fun getOwnsHttpClient ()Z
 }
 
-public final class io/github/oyedsamu/caterktor/LogLevel : java/lang/Enum {
-	public static final field Basic Lio/github/oyedsamu/caterktor/LogLevel;
-	public static final field Body Lio/github/oyedsamu/caterktor/LogLevel;
-	public static final field Headers Lio/github/oyedsamu/caterktor/LogLevel;
-	public static final field None Lio/github/oyedsamu/caterktor/LogLevel;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public static fun valueOf (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/LogLevel;
-	public static fun values ()[Lio/github/oyedsamu/caterktor/LogLevel;
-}
-
-public final class io/github/oyedsamu/caterktor/LoggerInterceptor : io/github/oyedsamu/caterktor/Interceptor {
-	public static final field Companion Lio/github/oyedsamu/caterktor/LoggerInterceptor$Companion;
-	public fun <init> (Lio/github/oyedsamu/caterktor/LogLevel;Ljava/util/Set;Lkotlin/jvm/functions/Function1;)V
-	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/LogLevel;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun getLevel ()Lio/github/oyedsamu/caterktor/LogLevel;
-	public final fun getLogger ()Lkotlin/jvm/functions/Function1;
-	public final fun getSensitiveHeaders ()Ljava/util/Set;
-	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public final class io/github/oyedsamu/caterktor/LoggerInterceptor$Companion {
-	public final fun getDefaultSensitiveHeaders ()Ljava/util/Set;
-}
-
 public final class io/github/oyedsamu/caterktor/NetworkClient {
 	public final fun close ()V
 	public final fun describePipeline ()Ljava/util/List;

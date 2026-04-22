@@ -1,10 +1,18 @@
-package io.github.oyedsamu.caterktor
+package io.github.oyedsamu.caterktor.logging
+
+import io.github.oyedsamu.caterktor.Chain
+import io.github.oyedsamu.caterktor.ExperimentalCaterktor
+import io.github.oyedsamu.caterktor.Interceptor
+import io.github.oyedsamu.caterktor.NetworkRequest
+import io.github.oyedsamu.caterktor.NetworkResponse
+import io.github.oyedsamu.caterktor.RequestBody
+import io.github.oyedsamu.caterktor.ResponseBody
 
 /**
  * Logging detail level for [LoggerInterceptor].
  *
- * Levels are ordered by verbosity — each level includes everything from
- * the levels above it.
+ * Levels are ordered by verbosity; each level includes everything from the
+ * levels above it.
  */
 @ExperimentalCaterktor
 public enum class LogLevel {
@@ -14,7 +22,7 @@ public enum class LogLevel {
     /**
      * One line per request: method, URL, status code, and duration.
      *
-     * Example: `→ GET https://api.example.com/users | ← 200 OK (124 ms)`
+     * Example: `GET https://api.example.com/users | 200 OK (124 ms)`
      */
     Basic,
 
@@ -28,7 +36,7 @@ public enum class LogLevel {
     /**
      * [Headers] plus the full request and response body decoded as UTF-8.
      * Binary bodies are rendered as `<binary N bytes>`. Use with care in
-     * production — bodies may contain PII.
+     * production; bodies may contain PII.
      */
     Body,
 }
@@ -37,22 +45,23 @@ public enum class LogLevel {
  * A [Chain]-level interceptor that logs outgoing requests and incoming
  * responses using a caller-supplied [logger] function.
  *
- * [LoggerInterceptor] operates on [NetworkRequest] and [NetworkResponse] —
- * it runs inside the interceptor pipeline, before and after the transport.
- * It does not see the decoded body or the [NetworkResult]; for result-level
- * observation use [NetworkClient.events] instead.
+ * [LoggerInterceptor] operates on [NetworkRequest] and [NetworkResponse]. It
+ * runs inside the interceptor pipeline, before and after the transport. It does
+ * not see the decoded body or the [io.github.oyedsamu.caterktor.NetworkResult];
+ * for result-level observation use
+ * [io.github.oyedsamu.caterktor.NetworkClient.events] instead.
  *
  * ## Ordering
  *
- * Register [LoggerInterceptor] **last** in the pipeline (i.e. after auth and
- * retry interceptors) so the logged request reflects all rewrites and the
- * logged response is the final one after any retry.
+ * Register [LoggerInterceptor] last in the pipeline, after auth and retry
+ * interceptors, so the logged request reflects all rewrites and the logged
+ * response is the final one after any retry.
  *
  * ## Sensitive headers
  *
  * At [LogLevel.Headers] and above, header values whose name matches
- * [sensitiveHeaders] (case-insensitive) are replaced with `***`. Extend
- * the default set if your API uses non-standard auth headers.
+ * [sensitiveHeaders] (case-insensitive) are replaced with `***`. Extend the
+ * default set if your API uses non-standard auth headers.
  *
  * ## Example
  *
@@ -78,7 +87,6 @@ public class LoggerInterceptor(
     public val logger: (String) -> Unit,
 ) : Interceptor {
 
-    /** Lowercase-normalized copy of [sensitiveHeaders] for fast lookup. */
     private val sensitiveHeadersLower: Set<String> = sensitiveHeaders.mapTo(mutableSetOf()) { it.lowercase() }
 
     override suspend fun intercept(chain: Chain): NetworkResponse {
@@ -95,19 +103,15 @@ public class LoggerInterceptor(
         return response
     }
 
-    /**
-     * Logs the outgoing [request] at the configured [level].
-     *
-     * At [LogLevel.Basic], logs the HTTP method and URL.
-     * At [LogLevel.Headers], also logs each header (redacting sensitive ones).
-     * At [LogLevel.Body], also logs the request body if present.
-     */
     private fun logRequest(request: NetworkRequest) {
-        logger("→ ${request.method.name} ${request.url}")
+        logger("-> ${request.method.name} ${request.url}")
         if (level >= LogLevel.Headers) {
             for (name in request.headers.names) {
-                val value = if (name.lowercase() in sensitiveHeadersLower) "***"
-                            else request.headers.getAll(name).joinToString(", ")
+                val value = if (name.lowercase() in sensitiveHeadersLower) {
+                    "***"
+                } else {
+                    request.headers.getAll(name).joinToString(", ")
+                }
                 logger("  $name: $value")
             }
         }
@@ -122,19 +126,15 @@ public class LoggerInterceptor(
         }
     }
 
-    /**
-     * Logs the incoming [response] and its [durationMs] at the configured [level].
-     *
-     * At [LogLevel.Basic], logs the status code and duration.
-     * At [LogLevel.Headers], also logs each header (redacting sensitive ones).
-     * At [LogLevel.Body], also logs the response body if non-empty.
-     */
     private fun logResponse(response: NetworkResponse, durationMs: Long) {
-        logger("← ${response.status.code} (${durationMs} ms)")
+        logger("<- ${response.status.code} (${durationMs} ms)")
         if (level >= LogLevel.Headers) {
             for (name in response.headers.names) {
-                val value = if (name.lowercase() in sensitiveHeadersLower) "***"
-                            else response.headers.getAll(name).joinToString(", ")
+                val value = if (name.lowercase() in sensitiveHeadersLower) {
+                    "***"
+                } else {
+                    response.headers.getAll(name).joinToString(", ")
+                }
                 logger("  $name: $value")
             }
         }
@@ -157,10 +157,8 @@ public class LoggerInterceptor(
 
     public companion object {
         /**
-         * Default set of header names whose values are redacted at [LogLevel.Headers] and above.
-         *
-         * Covers the most common authentication and session headers. Extend this set via
-         * [LoggerInterceptor.sensitiveHeaders] if your API uses non-standard auth headers.
+         * Default set of header names whose values are redacted at
+         * [LogLevel.Headers] and above.
          */
         public val DefaultSensitiveHeaders: Set<String> = setOf(
             "Authorization",
@@ -173,13 +171,6 @@ public class LoggerInterceptor(
     }
 }
 
-/**
- * Decodes this [ByteArray] to a UTF-8 string if all bytes are printable ASCII
- * or standard line-ending characters; otherwise returns a `<binary N bytes>` placeholder.
- *
- * The check covers bytes in the printable ASCII range (`0x20`–`0x7E`), carriage return
- * (`0x0D`), and line feed (`0x0A`).
- */
 private fun ByteArray.decodeToStringOrBinary(): String =
     if (all { it in 0x20..0x7E || it == 0x0A.toByte() || it == 0x0D.toByte() }) {
         decodeToString()
