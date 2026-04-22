@@ -101,6 +101,103 @@ class LoggerInterceptorTest {
         assertTrue(lines.any { it.contains("<binary 3 bytes>") })
     }
 
+    @Test
+    fun bodyLevelRedactsQueryParametersAndJsonFields() = runTest {
+        val lines = mutableListOf<String>()
+        val client = CaterKtor {
+            transport = Transport {
+                response(
+                    status = HttpStatus.OK,
+                    headers = Headers { set("Content-Type", "application/json") },
+                    body = """{"token":"server-secret","visible":"ok"}""".encodeToByteArray(),
+                )
+            }
+            addInterceptor(LoggerInterceptor(level = LogLevel.Body, logger = lines::add))
+        }
+
+        val response = client.execute(
+            NetworkRequest(
+                method = HttpMethod.POST,
+                url = "https://example.test/private?access_token=query-secret&visible=yes",
+                body = RequestBody.Text(
+                    text = """{"password":"body-secret","profile":{"token":"nested-secret","name":"Ada"}}""",
+                    contentType = "application/json",
+                ),
+            ),
+        )
+
+        assertEquals(HttpStatus.OK, response.status)
+        assertTrue(lines.any { it.contains("access_token=***") })
+        assertTrue(lines.any { it.contains("visible=yes") })
+        assertTrue(lines.any { it.contains("\"password\":\"***\"") })
+        assertTrue(lines.any { it.contains("\"token\":\"***\"") })
+        assertTrue(lines.any { it.contains("\"name\":\"Ada\"") })
+        assertFalse(lines.any { it.contains("query-secret") })
+        assertFalse(lines.any { it.contains("body-secret") })
+        assertFalse(lines.any { it.contains("nested-secret") })
+        assertFalse(lines.any { it.contains("server-secret") })
+    }
+
+    @Test
+    fun regexRulesApplyToNonSensitiveHeaderValues() = runTest {
+        val lines = mutableListOf<String>()
+        val redaction = RedactionEngine(
+            regexRules = listOf(
+                RegexRedactionRule(Regex("[0-9]{3}-[0-9]{2}-[0-9]{4}")),
+            ),
+        )
+        val client = CaterKtor {
+            transport = Transport { response(HttpStatus.NoContent) }
+            addInterceptor(
+                LoggerInterceptor(
+                    level = LogLevel.Headers,
+                    redaction = redaction,
+                    logger = lines::add,
+                ),
+            )
+        }
+
+        val response = client.execute(
+            NetworkRequest(
+                method = HttpMethod.GET,
+                url = "https://example.test/private",
+                headers = Headers { set("X-Subject", "id=123-45-6789") },
+            ),
+        )
+
+        assertEquals(HttpStatus.NoContent, response.status)
+        assertTrue(lines.any { it == "  x-subject: id=***" })
+        assertFalse(lines.any { it.contains("123-45-6789") })
+    }
+
+    @Test
+    fun bodyLevelHonorsMaxBodyBytes() = runTest {
+        val lines = mutableListOf<String>()
+        val redaction = RedactionEngine(maxBodyBytes = 4)
+        val client = CaterKtor {
+            transport = Transport { response(HttpStatus.OK, body = "too-large".encodeToByteArray()) }
+            addInterceptor(
+                LoggerInterceptor(
+                    level = LogLevel.Body,
+                    redaction = redaction,
+                    logger = lines::add,
+                ),
+            )
+        }
+
+        val response = client.execute(
+            NetworkRequest(
+                method = HttpMethod.POST,
+                url = "https://example.test/upload",
+                body = RequestBody.Text("too-large"),
+            ),
+        )
+
+        assertEquals(HttpStatus.OK, response.status)
+        assertTrue(lines.any { it.contains("<body 9 bytes exceeds max 4 bytes>") })
+        assertFalse(lines.any { it.contains("too-large") })
+    }
+
     private fun response(
         status: HttpStatus,
         headers: Headers = Headers.Empty,

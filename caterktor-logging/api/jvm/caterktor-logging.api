@@ -10,10 +10,13 @@ public final class io/github/oyedsamu/caterktor/logging/LogLevel : java/lang/Enu
 
 public final class io/github/oyedsamu/caterktor/logging/LoggerInterceptor : io/github/oyedsamu/caterktor/Interceptor {
 	public static final field Companion Lio/github/oyedsamu/caterktor/logging/LoggerInterceptor$Companion;
+	public fun <init> (Lio/github/oyedsamu/caterktor/logging/LogLevel;Lio/github/oyedsamu/caterktor/logging/RedactionEngine;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/logging/LogLevel;Lio/github/oyedsamu/caterktor/logging/RedactionEngine;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun <init> (Lio/github/oyedsamu/caterktor/logging/LogLevel;Ljava/util/Set;Lkotlin/jvm/functions/Function1;)V
 	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/logging/LogLevel;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getLevel ()Lio/github/oyedsamu/caterktor/logging/LogLevel;
 	public final fun getLogger ()Lkotlin/jvm/functions/Function1;
+	public final fun getRedaction ()Lio/github/oyedsamu/caterktor/logging/RedactionEngine;
 	public final fun getSensitiveHeaders ()Ljava/util/Set;
 	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -21,3 +24,43 @@ public final class io/github/oyedsamu/caterktor/logging/LoggerInterceptor : io/g
 public final class io/github/oyedsamu/caterktor/logging/LoggerInterceptor$Companion {
 	public final fun getDefaultSensitiveHeaders ()Ljava/util/Set;
 }
+
+public final class io/github/oyedsamu/caterktor/logging/RedactionEngine {
+	public static final field Companion Lio/github/oyedsamu/caterktor/logging/RedactionEngine$Companion;
+	public static final field DefaultReplacement Ljava/lang/String;
+	public fun <init> ()V
+	public fun <init> (Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/List;Ljava/lang/String;IZ)V
+	public synthetic fun <init> (Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/List;Ljava/lang/String;IZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getHeaderNames ()Ljava/util/Set;
+	public final fun getJsonBodyFields ()Ljava/util/Set;
+	public final fun getMaxBodyBytes ()I
+	public final fun getQueryParameterNames ()Ljava/util/Set;
+	public final fun getRegexRules ()Ljava/util/List;
+	public final fun getReplacement ()Ljava/lang/String;
+	public final fun getSuppressBinaryBodies ()Z
+	public final fun redactBody (Ljava/lang/String;[B)Ljava/lang/String;
+	public final fun redactHeader (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public final fun redactTextBody (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public final fun redactUrl (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/logging/RedactionEngine$Companion {
+	public final fun getDefaultHeaderNames ()Ljava/util/Set;
+	public final fun getDefaultJsonBodyFields ()Ljava/util/Set;
+	public final fun getDefaultQueryParameterNames ()Ljava/util/Set;
+}
+
+public final class io/github/oyedsamu/caterktor/logging/RegexRedactionRule {
+	public fun <init> (Lkotlin/text/Regex;Ljava/lang/String;)V
+	public synthetic fun <init> (Lkotlin/text/Regex;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lkotlin/text/Regex;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lkotlin/text/Regex;Ljava/lang/String;)Lio/github/oyedsamu/caterktor/logging/RegexRedactionRule;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/logging/RegexRedactionRule;Lkotlin/text/Regex;Ljava/lang/String;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/logging/RegexRedactionRule;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPattern ()Lkotlin/text/Regex;
+	public final fun getReplacement ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+

@@ -75,19 +75,47 @@ public enum class LogLevel {
  * ```
  */
 @ExperimentalCaterktor
-public class LoggerInterceptor(
-    /** The level of detail to log. Defaults to [LogLevel.Basic]. */
+public class LoggerInterceptor private constructor(
+    /** The level of detail to log. */
     public val level: LogLevel = LogLevel.Basic,
     /**
      * Header names whose values are redacted at [LogLevel.Headers] and above.
      * Comparison is case-insensitive.
      */
     public val sensitiveHeaders: Set<String> = DefaultSensitiveHeaders,
+    /** Redaction engine applied to URLs, headers, and bodies before logging. */
+    public val redaction: RedactionEngine = RedactionEngine(headerNames = sensitiveHeaders),
     /** Receives each log line. Supply `println`, Napier, Timber, etc. */
     public val logger: (String) -> Unit,
 ) : Interceptor {
 
-    private val sensitiveHeadersLower: Set<String> = sensitiveHeaders.mapTo(mutableSetOf()) { it.lowercase() }
+    /**
+     * Create a logger with header-name redaction.
+     */
+    public constructor(
+        level: LogLevel = LogLevel.Basic,
+        sensitiveHeaders: Set<String> = DefaultSensitiveHeaders,
+        logger: (String) -> Unit,
+    ) : this(
+        level = level,
+        sensitiveHeaders = sensitiveHeaders,
+        redaction = RedactionEngine(headerNames = sensitiveHeaders),
+        logger = logger,
+    )
+
+    /**
+     * Create a logger with a custom [RedactionEngine].
+     */
+    public constructor(
+        level: LogLevel = LogLevel.Basic,
+        redaction: RedactionEngine,
+        logger: (String) -> Unit,
+    ) : this(
+        level = level,
+        sensitiveHeaders = redaction.headerNames,
+        redaction = redaction,
+        logger = logger,
+    )
 
     override suspend fun intercept(chain: Chain): NetworkResponse {
         if (level == LogLevel.None) return chain.proceed(chain.request)
@@ -104,22 +132,18 @@ public class LoggerInterceptor(
     }
 
     private fun logRequest(request: NetworkRequest) {
-        logger("-> ${request.method.name} ${request.url}")
+        logger("-> ${request.method.name} ${redaction.redactUrl(request.url)}")
         if (level >= LogLevel.Headers) {
             for (name in request.headers.names) {
-                val value = if (name.lowercase() in sensitiveHeadersLower) {
-                    "***"
-                } else {
-                    request.headers.getAll(name).joinToString(", ")
-                }
+                val value = redaction.redactHeader(name, request.headers.getAll(name).joinToString(", "))
                 logger("  $name: $value")
             }
         }
         if (level >= LogLevel.Body) {
             request.body?.let { body ->
                 when (body) {
-                    is RequestBody.Bytes -> logger("  Body (${body.contentType}): ${body.bytes.decodeToStringOrBinary()}")
-                    is RequestBody.Text -> logger("  Body (${body.contentType}): ${body.text}")
+                    is RequestBody.Bytes -> logger("  Body (${body.contentType}): ${redaction.redactBody(body.contentType, body.bytes)}")
+                    is RequestBody.Text -> logger("  Body (${body.contentType}): ${redaction.redactTextBody(body.contentType, body.text)}")
                     is RequestBody.Source -> logger("  Body (${body.contentType}): ${body.describeStreamingBody()}")
                 }
             }
@@ -130,11 +154,7 @@ public class LoggerInterceptor(
         logger("<- ${response.status.code} (${durationMs} ms)")
         if (level >= LogLevel.Headers) {
             for (name in response.headers.names) {
-                val value = if (name.lowercase() in sensitiveHeadersLower) {
-                    "***"
-                } else {
-                    response.headers.getAll(name).joinToString(", ")
-                }
+                val value = redaction.redactHeader(name, response.headers.getAll(name).joinToString(", "))
                 logger("  $name: $value")
             }
         }
@@ -143,7 +163,7 @@ public class LoggerInterceptor(
                 is ResponseBody.Bytes -> {
                     val bytes = body.bytes
                     if (bytes.isNotEmpty()) {
-                        logger("  Body: ${bytes.decodeToStringOrBinary()}")
+                        logger("  Body: ${redaction.redactBody(response.headers["Content-Type"], bytes)}")
                     }
                 }
                 is ResponseBody.Source -> {
@@ -160,23 +180,9 @@ public class LoggerInterceptor(
          * Default set of header names whose values are redacted at
          * [LogLevel.Headers] and above.
          */
-        public val DefaultSensitiveHeaders: Set<String> = setOf(
-            "Authorization",
-            "Cookie",
-            "Set-Cookie",
-            "Proxy-Authorization",
-            "X-Auth-Token",
-            "X-Api-Key",
-        )
+        public val DefaultSensitiveHeaders: Set<String> = RedactionEngine.DefaultHeaderNames
     }
 }
-
-private fun ByteArray.decodeToStringOrBinary(): String =
-    if (all { it in 0x20..0x7E || it == 0x0A.toByte() || it == 0x0D.toByte() }) {
-        decodeToString()
-    } else {
-        "<binary ${size} bytes>"
-    }
 
 private fun RequestBody.Source.describeStreamingBody(): String =
     "<streaming ${contentLength?.toString() ?: "unknown"} bytes>"
