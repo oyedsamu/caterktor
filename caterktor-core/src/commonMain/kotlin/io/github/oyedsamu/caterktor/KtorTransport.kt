@@ -1,12 +1,16 @@
 package io.github.oyedsamu.caterktor
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.request.url
 import io.ktor.client.statement.readRawBytes
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.content.ByteArrayContent
+import io.ktor.http.content.ChannelWriterContent
+import io.ktor.http.content.OutgoingContent
+import io.ktor.utils.io.writeSource
 import io.ktor.http.HttpMethod as KtorHttpMethod
 
 /**
@@ -27,9 +31,14 @@ import io.ktor.http.HttpMethod as KtorHttpMethod
  *
  * ## Body support
  *
- * [RequestBody.Bytes] is supported: the bytes are passed to the engine and
- * the `Content-Type` header is set from the body. Streaming body support
- * (sources, multipart, forms) arrives in Wave B1.
+ * [RequestBody.Bytes] and [RequestBody.Text] are sent as replayable byte
+ * content. [RequestBody.Source] is sent through Ktor's write-channel content
+ * path so large request payloads can stream without first materializing a
+ * byte array in CaterKtor.
+ *
+ * Responses are currently exposed as replayable [ResponseBody.Bytes] because
+ * this in-core transport uses Ktor's buffered request API. The Ktor module
+ * split will introduce a closable streaming response contract.
  *
  * @property httpClient The caller-supplied Ktor client. The exact instance
  *   passed in is retained so that callers can reference it for diagnostics;
@@ -57,7 +66,7 @@ public class KtorTransport(
         val ktorResponse = client.request {
             method = KtorHttpMethod(request.method.name)
             url(request.url)
-            val bodyContentType = (request.body as? RequestBody.Bytes)?.contentType
+            val bodyContentType = request.body?.contentType
             for (name in request.headers.names) {
                 if (bodyContentType != null && name.equals(HttpHeaders.ContentType, ignoreCase = true)) {
                     continue
@@ -68,10 +77,7 @@ public class KtorTransport(
             }
             when (val body = request.body) {
                 null -> { /* no body, nothing to set */ }
-                is RequestBody.Bytes -> {
-                    setBody(body.bytes)
-                    header(HttpHeaders.ContentType, body.contentType)
-                }
+                else -> setBody(body.toOutgoingContent())
             }
         }
 
@@ -87,7 +93,10 @@ public class KtorTransport(
         NetworkResponse(
             status = HttpStatus(ktorResponse.status.value),
             headers = responseHeaders,
-            body = bytes,
+            body = ResponseBody.Bytes(
+                bytes = bytes,
+                contentType = responseHeaders[HttpHeaders.ContentType],
+            ),
         )
     }
 
@@ -100,3 +109,24 @@ public class KtorTransport(
         }
     }
 }
+
+private fun RequestBody.toOutgoingContent(): OutgoingContent =
+    when (this) {
+        is RequestBody.Bytes -> ByteArrayContent(bytes, parseContentType(contentType))
+        is RequestBody.Text -> ByteArrayContent(bytes(), parseContentType(contentType))
+        is RequestBody.Source -> ChannelWriterContent(
+            body = {
+                val opened = source()
+                try {
+                    writeSource(opened)
+                } finally {
+                    opened.close()
+                }
+            },
+            contentType = parseContentType(contentType),
+            contentLength = contentLength,
+        )
+    }
+
+private fun parseContentType(value: String?): ContentType? =
+    value?.let(ContentType::parse)

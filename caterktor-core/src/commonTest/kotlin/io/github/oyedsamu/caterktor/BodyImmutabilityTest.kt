@@ -32,4 +32,25 @@ class BodyImmutabilityTest {
         read[1] = 8
         assertContentEquals(byteArrayOf(1, 2, 3), body.bytes)
     }
+
+    @Test
+    fun responseBodyBytesCopiesInputAndReadBytes() {
+        val source = byteArrayOf(1, 2, 3)
+        val body = ResponseBody.Bytes(source, "application/octet-stream")
+
+        source[0] = 9
+        assertContentEquals(byteArrayOf(1, 2, 3), body.bytes)
+
+        val read = body.bytes
+        read[1] = 8
+        assertContentEquals(byteArrayOf(1, 2, 3), body.bytes)
+    }
+
+    @Test
+    fun responseBodyBytesOpensFreshSource() {
+        val body = ResponseBody.Bytes(byteArrayOf(1, 2, 3), "application/octet-stream")
+
+        assertContentEquals(byteArrayOf(1, 2, 3), body.bytes())
+        assertContentEquals(byteArrayOf(1, 2, 3), body.bytes())
+    }
 }

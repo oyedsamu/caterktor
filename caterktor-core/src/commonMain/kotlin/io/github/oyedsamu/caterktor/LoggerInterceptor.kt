@@ -115,6 +115,8 @@ public class LoggerInterceptor(
             request.body?.let { body ->
                 when (body) {
                     is RequestBody.Bytes -> logger("  Body (${body.contentType}): ${body.bytes.decodeToStringOrBinary()}")
+                    is RequestBody.Text -> logger("  Body (${body.contentType}): ${body.text}")
+                    is RequestBody.Source -> logger("  Body (${body.contentType}): ${body.describeStreamingBody()}")
                 }
             }
         }
@@ -136,8 +138,20 @@ public class LoggerInterceptor(
                 logger("  $name: $value")
             }
         }
-        if (level >= LogLevel.Body && response.body.isNotEmpty()) {
-            logger("  Body: ${response.body.decodeToStringOrBinary()}")
+        if (level >= LogLevel.Body) {
+            when (val body = response.body) {
+                is ResponseBody.Bytes -> {
+                    val bytes = body.bytes
+                    if (bytes.isNotEmpty()) {
+                        logger("  Body: ${bytes.decodeToStringOrBinary()}")
+                    }
+                }
+                is ResponseBody.Source -> {
+                    if (body.contentLength != 0L) {
+                        logger("  Body: ${body.describeStreamingBody()}")
+                    }
+                }
+            }
         }
     }
 
@@ -172,3 +186,9 @@ private fun ByteArray.decodeToStringOrBinary(): String =
     } else {
         "<binary ${size} bytes>"
     }
+
+private fun RequestBody.Source.describeStreamingBody(): String =
+    "<streaming ${contentLength?.toString() ?: "unknown"} bytes>"
+
+private fun ResponseBody.Source.describeStreamingBody(): String =
+    "<streaming ${contentLength?.toString() ?: "unknown"} bytes>"

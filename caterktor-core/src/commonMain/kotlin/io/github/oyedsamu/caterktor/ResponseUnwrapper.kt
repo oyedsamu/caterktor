@@ -23,6 +23,24 @@ package io.github.oyedsamu.caterktor
 public interface ResponseUnwrapper {
 
     /**
+     * Transform [body] into the body that will be passed to [BodyConverter.decode].
+     *
+     * The default implementation keeps existing byte-based unwrappers working by
+     * consuming [body] through [bytes][ResponseBody.bytes] and returning a
+     * replayable [ResponseBody.Bytes].
+     *
+     * @param body        The raw body from the network response.
+     * @param contentType The bare content-type (e.g. `"application/json"`), or `null` if absent.
+     * @param response    The full [NetworkResponse] for header / status inspection.
+     * @return The body to hand to [BodyConverter.decode].
+     */
+    public fun unwrap(body: ResponseBody, contentType: String?, response: NetworkResponse): ResponseBody =
+        ResponseBody.Bytes(
+            bytes = unwrap(body.bytes(), contentType, response),
+            contentType = body.contentType,
+        )
+
+    /**
      * Transform [raw] bytes into the bytes that will be passed to [BodyConverter.decode].
      *
      * @param raw         The raw bytes from the network response.
@@ -30,14 +48,15 @@ public interface ResponseUnwrapper {
      * @param response    The full [NetworkResponse] for header / status inspection.
      * @return The bytes to hand to [BodyConverter.decode]. May be [raw] itself.
      */
-    public fun unwrap(raw: ByteArray, contentType: String?, response: NetworkResponse): ByteArray
+    public fun unwrap(raw: ByteArray, contentType: String?, response: NetworkResponse): ByteArray = raw
 
     public companion object {
         /**
-         * Identity unwrapper — passes the response bytes to [BodyConverter] unchanged.
+         * Identity unwrapper — passes the response body to [BodyConverter] unchanged.
          * This is the default used when no unwrapper is configured.
          */
         public val Raw: ResponseUnwrapper = object : ResponseUnwrapper {
+            override fun unwrap(body: ResponseBody, contentType: String?, response: NetworkResponse): ResponseBody = body
             override fun unwrap(raw: ByteArray, contentType: String?, response: NetworkResponse): ByteArray = raw
             override fun toString(): String = "ResponseUnwrapper.Raw"
         }

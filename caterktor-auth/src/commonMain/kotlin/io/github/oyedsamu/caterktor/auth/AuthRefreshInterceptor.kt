@@ -11,7 +11,6 @@ import io.github.oyedsamu.caterktor.NetworkErrorException
 import io.github.oyedsamu.caterktor.NetworkRequest
 import io.github.oyedsamu.caterktor.NetworkResponse
 import io.github.oyedsamu.caterktor.PrivilegedInterceptor
-import io.github.oyedsamu.caterktor.RawBody
 import io.github.oyedsamu.caterktor.TimeoutKind
 import io.github.oyedsamu.caterktor.proceedForAttempt
 import kotlin.time.Clock
@@ -178,7 +177,7 @@ public class AuthRefreshInterceptor(
             NetworkError.Http(
                 status = HttpStatus.Unauthorized,
                 headers = response.headers,
-                body = ErrorBody(raw = RawBody(response.body, response.headers["Content-Type"]), parsed = null),
+                body = ErrorBody(raw = response.rawBody(), parsed = null),
                 cause = cause,
             ),
         )

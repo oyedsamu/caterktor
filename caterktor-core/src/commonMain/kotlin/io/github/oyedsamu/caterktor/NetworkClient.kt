@@ -160,7 +160,7 @@ internal suspend fun <T : Any> NetworkClient.call(
         tryEmitEvent(NetworkEvent.ResponseReceived(requestId, response.status, response.headers, durationMs, attempts))
 
         if (response.status.isClientError || response.status.isServerError) {
-            val raw = RawBody(response.body, response.headers["Content-Type"])
+            val raw = response.rawBody()
             val error = NetworkError.Http(
                 status = response.status,
                 headers = response.headers,
@@ -223,7 +223,7 @@ private fun <T : Any> NetworkClient.decodeResponse(
         ?: return NetworkResult.Failure(
             error = NetworkError.Serialization(
                 phase = SerializationPhase.Decoding,
-                rawBody = RawBody(response.body, contentTypeHeader),
+                rawBody = response.rawBody(),
                 cause = IllegalStateException(
                     "No BodyConverter registered for content-type '$bareContentType'. " +
                         "Register one via CaterKtorBuilder.addConverter().",
@@ -234,12 +234,12 @@ private fun <T : Any> NetworkClient.decodeResponse(
             requestId = requestId,
         )
     return try {
-        val bodyBytes: ByteArray = if (unwrapper != null) {
+        val responseBody: ResponseBody = if (unwrapper != null) {
             unwrapper.unwrap(response.body, bareContentType.ifEmpty { null }, response)
         } else {
             response.body
         }
-        val raw = RawBody(bodyBytes, contentTypeHeader)
+        val raw = responseBody.rawBody(contentTypeHeader)
         val body = converter.decode<T>(raw, responseType)
         NetworkResult.Success(
             body = body,
@@ -255,7 +255,7 @@ private fun <T : Any> NetworkClient.decodeResponse(
         NetworkResult.Failure(
             error = NetworkError.Serialization(
                 phase = SerializationPhase.Decoding,
-                rawBody = RawBody(response.body, contentTypeHeader),
+                rawBody = response.rawBody(),
                 cause = e,
             ),
             durationMs = durationMs,

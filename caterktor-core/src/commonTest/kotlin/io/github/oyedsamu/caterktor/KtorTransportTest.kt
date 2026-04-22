@@ -9,6 +9,7 @@ import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.io.IOException
+import kotlinx.io.Buffer
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -47,7 +48,7 @@ class KtorTransportTest {
         )
 
         assertEquals(HttpStatus.OK, response.status)
-        assertContentEquals(payload, response.body)
+        assertContentEquals(payload, response.bodyBytes)
         assertEquals("text/plain", response.headers["content-type"])
     }
 
@@ -152,6 +153,41 @@ class KtorTransportTest {
     }
 
     @Test
+    fun source_body_is_sent_through_streaming_content() = runTest {
+        var seenBody: ByteArray? = null
+        var seenContentType: String? = null
+        var seenContentLength: Long? = null
+        val engine = MockEngine { request ->
+            seenBody = request.body.toByteArray()
+            seenContentType = request.body.contentType?.toString()
+            seenContentLength = request.body.contentLength
+            respond(content = byteArrayOf(), status = HttpStatusCode.Created)
+        }
+        val transport = KtorTransport(HttpClient(engine))
+
+        val payload = ByteArray(128) { it.toByte() }
+        val response = transport.execute(
+            NetworkRequest(
+                method = HttpMethod.POST,
+                url = "https://example.test/upload",
+                body = RequestBody.Source(
+                    sourceFactory = { Buffer().also { it.write(payload) } },
+                    contentType = "application/octet-stream",
+                    contentLength = payload.size.toLong(),
+                ),
+            ),
+        )
+
+        assertEquals(HttpStatus.Created, response.status)
+        assertContentEquals(payload, seenBody)
+        assertTrue(
+            seenContentType.orEmpty().contains("application/octet-stream"),
+            "expected Content-Type to contain application/octet-stream, got: $seenContentType",
+        )
+        assertEquals(payload.size.toLong(), seenContentLength)
+    }
+
+    @Test
     fun io_exception_maps_to_connection_failed() = runTest {
         val engine = MockEngine { _ ->
             throw IOException("network unreachable")
@@ -183,6 +219,6 @@ class KtorTransportTest {
         )
 
         assertEquals(HttpStatus.InternalServerError, response.status)
-        assertContentEquals("boom".encodeToByteArray(), response.body)
+        assertContentEquals("boom".encodeToByteArray(), response.bodyBytes)
     }
 }

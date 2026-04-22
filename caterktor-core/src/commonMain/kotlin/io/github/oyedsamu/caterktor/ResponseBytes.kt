@@ -1,7 +1,10 @@
 package io.github.oyedsamu.caterktor
 
 /**
- * Raw response body bytes. Will be superseded by a streaming `Source` in B3,
- * at which point this typealias will be deprecated.
+ * Legacy alias for raw response bytes.
  */
+@Deprecated(
+    "Use ResponseBody.Bytes for replayable bodies or ResponseBody.Source for streaming bodies.",
+    ReplaceWith("ResponseBody.Bytes(this)"),
+)
 public typealias ResponseBytes = ByteArray
