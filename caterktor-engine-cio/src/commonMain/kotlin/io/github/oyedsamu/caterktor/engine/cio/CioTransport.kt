@@ -26,4 +26,4 @@ import io.ktor.client.engine.cio.CIOEngineConfig
 @ExperimentalCaterktor
 public fun CioTransport(
     block: io.ktor.client.HttpClientConfig<CIOEngineConfig>.() -> Unit = {},
-): KtorTransport = KtorTransport(HttpClient(CIO, block))
+): KtorTransport = KtorTransport(HttpClient(CIO, block), ownsHttpClient = true)

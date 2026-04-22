@@ -122,6 +122,36 @@ class KtorTransportTest {
     }
 
     @Test
+    fun bytes_body_content_type_overrides_conflicting_header() = runTest {
+        var seenBodyContentType: String? = null
+        var seenContentTypeHeaders: List<String> = emptyList()
+        val engine = MockEngine { request ->
+            seenBodyContentType = request.body.contentType?.toString()
+            seenContentTypeHeaders = request.headers.getAll("Content-Type") ?: emptyList()
+            respond(content = byteArrayOf(), status = HttpStatusCode.Created)
+        }
+        val transport = KtorTransport(HttpClient(engine))
+
+        transport.execute(
+            NetworkRequest(
+                method = HttpMethod.POST,
+                url = "https://example.test/",
+                headers = Headers { set("Content-Type", "text/plain") },
+                body = RequestBody.Bytes("""{"x":1}""".encodeToByteArray(), "application/json"),
+            ),
+        )
+
+        assertTrue(
+            seenBodyContentType.orEmpty().contains("application/json"),
+            "expected body Content-Type to contain application/json, got: $seenBodyContentType",
+        )
+        assertTrue(
+            "text/plain" !in seenContentTypeHeaders,
+            "conflicting Content-Type header should not be forwarded: $seenContentTypeHeaders",
+        )
+    }
+
+    @Test
     fun io_exception_maps_to_connection_failed() = runTest {
         val engine = MockEngine { _ ->
             throw IOException("network unreachable")

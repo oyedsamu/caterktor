@@ -9,15 +9,21 @@ package io.github.oyedsamu.caterktor
  * The contents are held as a defensive copy of [bytes]; subsequent mutations to the
  * array passed into the constructor do not affect this instance.
  *
- * @property bytes The raw body bytes. Not defensively copied on read — callers
- *   MUST treat the returned array as immutable.
+ * @property bytes The raw body bytes as a fresh defensive copy.
  * @property contentType The value of the `Content-Type` response header, if any,
  *   without parameter parsing. `null` when the server sent no `Content-Type`.
  */
 public class RawBody(
-    public val bytes: ByteArray,
+    bytes: ByteArray,
     public val contentType: String?,
 ) {
+    private val bytesStorage: ByteArray = bytes.copyOf()
+
+    /**
+     * The raw body bytes as a fresh defensive copy.
+     */
+    public val bytes: ByteArray
+        get() = bytesStorage.copyOf()
 
     /**
      * Decodes [bytes] as a string using the given [charset] name.
@@ -26,17 +32,17 @@ public class RawBody(
      * on platforms whose charset registry lacks them. Defaults to `UTF-8`.
      */
     public fun asString(charset: String = "UTF-8"): String =
-        bytes.decodeToStringWith(charset)
+        bytesStorage.decodeToStringWith(charset)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is RawBody) return false
         if (contentType != other.contentType) return false
-        return bytes.contentEquals(other.bytes)
+        return bytesStorage.contentEquals(other.bytesStorage)
     }
 
     override fun hashCode(): Int {
-        var result = bytes.contentHashCode()
+        var result = bytesStorage.contentHashCode()
         result = 31 * result + (contentType?.hashCode() ?: 0)
         return result
     }
@@ -47,7 +53,7 @@ public class RawBody(
      * accidentally leaking bodies into logs.
      */
     override fun toString(): String =
-        "RawBody(contentType=$contentType, size=${bytes.size})"
+        "RawBody(contentType=$contentType, size=${bytesStorage.size})"
 }
 
 /**

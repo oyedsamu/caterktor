@@ -31,4 +31,4 @@ import io.ktor.client.engine.okhttp.OkHttpConfig
 @ExperimentalCaterktor
 public fun OkHttpTransport(
     block: io.ktor.client.HttpClientConfig<OkHttpConfig>.() -> Unit = {},
-): KtorTransport = KtorTransport(HttpClient(OkHttp, block))
+): KtorTransport = KtorTransport(HttpClient(OkHttp, block), ownsHttpClient = true)

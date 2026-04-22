@@ -46,6 +46,14 @@ public abstract interface class io/github/oyedsamu/caterktor/Chain {
 	public abstract fun proceed (Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class io/github/oyedsamu/caterktor/ChainKt {
+	public static final fun proceedForAttempt (Lio/github/oyedsamu/caterktor/Chain;Lio/github/oyedsamu/caterktor/NetworkRequest;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class io/github/oyedsamu/caterktor/CloseableTransport : io/github/oyedsamu/caterktor/Transport {
+	public abstract fun close ()V
+}
+
 public final class io/github/oyedsamu/caterktor/ConnectionFailureKind : java/lang/Enum {
 	public static final field Dns Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
 	public static final field Refused Lio/github/oyedsamu/caterktor/ConnectionFailureKind;
@@ -186,10 +194,13 @@ public abstract interface class io/github/oyedsamu/caterktor/Interceptor {
 	public abstract fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class io/github/oyedsamu/caterktor/KtorTransport : io/github/oyedsamu/caterktor/Transport {
-	public fun <init> (Lio/ktor/client/HttpClient;)V
+public final class io/github/oyedsamu/caterktor/KtorTransport : io/github/oyedsamu/caterktor/CloseableTransport {
+	public fun <init> (Lio/ktor/client/HttpClient;Z)V
+	public synthetic fun <init> (Lio/ktor/client/HttpClient;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
 	public fun execute (Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getHttpClient ()Lio/ktor/client/HttpClient;
+	public final fun getOwnsHttpClient ()Z
 }
 
 public final class io/github/oyedsamu/caterktor/LogLevel : java/lang/Enum {
@@ -217,6 +228,7 @@ public final class io/github/oyedsamu/caterktor/LoggerInterceptor$Companion {
 }
 
 public final class io/github/oyedsamu/caterktor/NetworkClient {
+	public final fun close ()V
 	public final fun describePipeline ()Ljava/util/List;
 	public final fun execute (Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun execute$default (Lio/github/oyedsamu/caterktor/NetworkClient;Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
@@ -327,6 +339,11 @@ public final class io/github/oyedsamu/caterktor/NetworkError$Unknown : io/github
 	public fun getCause ()Ljava/lang/Throwable;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkErrorException : java/lang/Exception {
+	public fun <init> (Lio/github/oyedsamu/caterktor/NetworkError;)V
+	public final fun getError ()Lio/github/oyedsamu/caterktor/NetworkError;
 }
 
 public abstract interface class io/github/oyedsamu/caterktor/NetworkEvent {

@@ -18,11 +18,16 @@ public sealed interface RequestBody {
      * encodes the request value. Do not construct manually unless you have
      * already-encoded bytes and want to bypass converter selection.
      *
-     * @property bytes The encoded content.
+     * @property bytes The encoded content as a fresh defensive copy.
      * @property contentType The MIME type, e.g. `"application/json"`.
      */
     public class Bytes(
-        public val bytes: ByteArray,
+        bytes: ByteArray,
         public val contentType: String,
-    ) : RequestBody
+    ) : RequestBody {
+        private val bytesStorage: ByteArray = bytes.copyOf()
+
+        public val bytes: ByteArray
+            get() = bytesStorage.copyOf()
+    }
 }

@@ -35,11 +35,15 @@ import io.ktor.http.HttpMethod as KtorHttpMethod
  *   passed in is retained so that callers can reference it for diagnostics;
  *   the transport internally uses a copy re-configured with
  *   `expectSuccess = false`.
+ * @property ownsHttpClient If `true`, [close] also closes [httpClient]. Engine
+ *   factory modules pass `true`; caller-supplied clients should usually keep
+ *   the default `false`.
  */
 @ExperimentalCaterktor
 public class KtorTransport(
     public val httpClient: HttpClient,
-) : Transport {
+    public val ownsHttpClient: Boolean = false,
+) : CloseableTransport {
 
     /**
      * Internal, defensively re-configured client. `expectSuccess = false`
@@ -47,12 +51,17 @@ public class KtorTransport(
      * caller-supplied [httpClient] was configured.
      */
     private val client: HttpClient = httpClient.config { expectSuccess = false }
+    private var closed: Boolean = false
 
     override suspend fun execute(request: NetworkRequest): NetworkResponse = mapKtorErrors {
         val ktorResponse = client.request {
             method = KtorHttpMethod(request.method.name)
             url(request.url)
+            val bodyContentType = (request.body as? RequestBody.Bytes)?.contentType
             for (name in request.headers.names) {
+                if (bodyContentType != null && name.equals(HttpHeaders.ContentType, ignoreCase = true)) {
+                    continue
+                }
                 for (value in request.headers.getAll(name)) {
                     headers.append(name, value)
                 }
@@ -80,5 +89,14 @@ public class KtorTransport(
             headers = responseHeaders,
             body = bytes,
         )
+    }
+
+    override fun close() {
+        if (closed) return
+        closed = true
+        client.close()
+        if (ownsHttpClient) {
+            httpClient.close()
+        }
     }
 }

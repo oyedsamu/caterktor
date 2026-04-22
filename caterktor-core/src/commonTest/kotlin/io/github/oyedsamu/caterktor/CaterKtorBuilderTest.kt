@@ -13,6 +13,16 @@ class CaterKtorBuilderTest {
         override suspend fun execute(request: NetworkRequest): NetworkResponse = NoopResponse
     }
 
+    private class CloseableNoopTransport : CloseableTransport {
+        var closeCalls: Int = 0
+
+        override suspend fun execute(request: NetworkRequest): NetworkResponse = NoopResponse
+
+        override fun close() {
+            closeCalls += 1
+        }
+    }
+
     private val noopTransport: Transport = NoopTransport()
 
     private companion object {
@@ -99,5 +109,17 @@ class CaterKtorBuilderTest {
             addInterceptor(AuthInterceptor())
         }
         assertEquals(client.describePipeline(), client.describePipeline())
+    }
+
+    @Test
+    fun close_closesCloseableTransport() {
+        val closeable = CloseableNoopTransport()
+        val client = CaterKtor {
+            transport = closeable
+        }
+
+        client.close()
+
+        assertEquals(1, closeable.closeCalls)
     }
 }

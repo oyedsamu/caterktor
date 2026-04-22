@@ -23,4 +23,4 @@ import io.ktor.client.engine.darwin.DarwinClientEngineConfig
 @ExperimentalCaterktor
 public fun DarwinTransport(
     block: io.ktor.client.HttpClientConfig<DarwinClientEngineConfig>.() -> Unit = {},
-): KtorTransport = KtorTransport(HttpClient(Darwin, block))
+): KtorTransport = KtorTransport(HttpClient(Darwin, block), ownsHttpClient = true)
