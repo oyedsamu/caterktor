@@ -11,8 +11,11 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # JVM: full test suite + API dump validation (fast, runs on every PR)
+  # ---------------------------------------------------------------------------
   check-jvm:
-    name: JVM tests, Android compile, API check
+    name: JVM tests + API check
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -30,13 +33,16 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_KEY }}
 
-      - name: Run JVM tests, compile Android, verify API dumps
+      - name: Run JVM tests and verify API dumps
         run: ./gradlew check apiCheck --stacktrace
 
+  # ---------------------------------------------------------------------------
+  # Apple: compile + run tests on iOS Simulator and macOS (host required)
+  # ---------------------------------------------------------------------------
   check-apple:
-    name: Compile Apple targets (iOS + macOS)
+    name: Apple tests (iOS Simulator + macOS)
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -52,18 +58,18 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_KEY }}
 
-      - name: Compile Apple targets
+      - name: Run Apple tests (simulator + macOS)
         run: >-
           ./gradlew
-          compileKotlinIosArm64
-          compileKotlinIosSimulatorArm64
-          compileKotlinIosX64
-          compileKotlinMacosArm64
-          compileKotlinMacosX64
+          iosSimulatorArm64Test
+          macosArm64Test
           --stacktrace
 
+  # ---------------------------------------------------------------------------
+  # Linux native: compile + run linuxX64 tests
+  # ---------------------------------------------------------------------------
   check-linux-native:
-    name: Compile Linux native targets
+    name: Linux native tests (linuxX64)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -81,5 +87,61 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_KEY }}
 
-      - name: Compile Linux native targets
-        run: ./gradlew compileKotlinLinuxX64 compileKotlinLinuxArm64 --stacktrace
+      - name: Run linuxX64 tests
+        run: ./gradlew linuxX64Test --stacktrace
+
+  # ---------------------------------------------------------------------------
+  # Maven local smoke: verify all published modules can be assembled and
+  # installed without error. Catches publication gate failures before release.
+  # ---------------------------------------------------------------------------
+  smoke-publish-local:
+    name: Maven local smoke (publication gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [check-jvm]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_CACHE_KEY }}
+
+      - name: Publish all modules to Maven Local
+        run: ./gradlew publishToMavenLocal --stacktrace
+
+      - name: Verify Maven Local artifacts exist
+        run: |
+          LOCAL_REPO="$HOME/.m2/repository/io/github/oyedsamu"
+          EXPECTED_MODULES=(
+            "caterktor-core"
+            "caterktor-ktor"
+            "caterktor-auth"
+            "caterktor-engine-okhttp"
+            "caterktor-engine-cio"
+            "caterktor-logging"
+            "caterktor-serialization-json"
+            "caterktor-serialization-protobuf"
+            "caterktor-serialization-cbor"
+            "caterktor-testing"
+          )
+          FAILED=0
+          for module in "${EXPECTED_MODULES[@]}"; do
+            if [ -d "$LOCAL_REPO/$module" ]; then
+              echo "✓ $module"
+            else
+              echo "✗ $module MISSING from Maven Local"
+              FAILED=1
+            fi
+          done
+          if [ $FAILED -ne 0 ]; then
+            echo "One or more expected modules were not published."
+            exit 1
+          fi

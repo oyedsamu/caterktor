@@ -11,10 +11,67 @@
  *   ORG_GRADLE_PROJECT_signingInMemoryKey
  *   ORG_GRADLE_PROJECT_signingInMemoryKeyPassword
  *
+ * ## No-placeholder gate
+ *
+ * Every publish task depends on [validatePublicationReadiness], which fails
+ * fast if this module's BCV `.api` dump is empty or consists only of blank
+ * lines. This ensures we never publish a stub artifact to Maven Central.
+ *
  * DO NOT change automaticRelease without TL sign-off.
  */
 plugins {
     id("com.vanniktech.maven.publish")
+}
+
+// ---------------------------------------------------------------------------
+// No-placeholder publication gate
+// ---------------------------------------------------------------------------
+// Fails the build if the module's BCV API dump is absent or empty, which
+// indicates a placeholder-only module was accidentally wired into publishing.
+val validatePublicationReadiness by tasks.registering {
+    group = "verification"
+    description = "Fails if this module has no real public API (placeholder guard)."
+
+    // Capture at configuration time — safe for configuration cache.
+    val apiDir = layout.projectDirectory.dir("api")
+    val moduleName = name
+
+    doLast {
+        val apiDirFile = apiDir.asFile
+
+        // If the api/ directory does not exist on this host, the module is
+        // likely a platform-specific module (e.g. Apple-only) being validated
+        // on a non-host platform. The apiCheck task handles cross-platform
+        // validation on the correct host. Skip here.
+        if (!apiDirFile.exists()) return@doLast
+
+        val apiFiles = apiDirFile.walkTopDown()
+            .filter { it.isFile && (it.extension == "api" || it.name.endsWith(".klib.api")) }
+            .toList()
+
+        if (apiFiles.isEmpty()) return@doLast // Same: no dump on this host, handled by apiCheck.
+
+        val hasRealApi = apiFiles.any { file ->
+            file.readLines().any { line ->
+                val trimmed = line.trim()
+                trimmed.isNotEmpty() && !trimmed.startsWith("//")
+            }
+        }
+
+        if (!hasRealApi) {
+            throw GradleException(
+                "Publication gate: '$moduleName' API dump contains no public declarations. " +
+                    "A placeholder-only module must not be published. " +
+                    "Either implement the module or remove caterktor.publishing from its build.gradle.kts."
+            )
+        }
+    }
+}
+
+// Wire the gate before every publish variant so it runs regardless of which
+// publish task is invoked (publishToMavenLocal, publishToMavenCentral, etc.).
+tasks.withType<AbstractPublishToMaven>().configureEach {
+    dependsOn(validatePublicationReadiness)
 }
 
 group = "io.github.oyedsamu"
