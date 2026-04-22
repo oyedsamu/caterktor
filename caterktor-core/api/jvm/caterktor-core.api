@@ -10,9 +10,11 @@ public final class io/github/oyedsamu/caterktor/CaterKtorBuilder {
 	public final fun getBaseUrl ()Ljava/lang/String;
 	public final fun getConverters ()Ljava/util/List;
 	public final fun getInterceptors ()Ljava/util/List;
+	public final fun getTimeoutConfig ()Lio/github/oyedsamu/caterktor/TimeoutConfig;
 	public final fun getTransport ()Lio/github/oyedsamu/caterktor/Transport;
 	public final fun setBaseUrl (Ljava/lang/String;)V
 	public final fun setTransport (Lio/github/oyedsamu/caterktor/Transport;)V
+	public final fun timeout (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 }
 
 public abstract interface annotation class io/github/oyedsamu/caterktor/CaterKtorDsl : java/lang/annotation/Annotation {
@@ -54,6 +56,18 @@ public final class io/github/oyedsamu/caterktor/ErrorBody$Companion {
 }
 
 public abstract interface annotation class io/github/oyedsamu/caterktor/ExperimentalCaterktor : java/lang/annotation/Annotation {
+}
+
+public final class io/github/oyedsamu/caterktor/ExponentialBackoffPolicy : io/github/oyedsamu/caterktor/RetryPolicy {
+	public fun <init> ()V
+	public fun <init> (JJDLkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (JJDLkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun computeDelayMs (ILio/github/oyedsamu/caterktor/NetworkRequest;Lio/github/oyedsamu/caterktor/NetworkResponse;Lio/github/oyedsamu/caterktor/NetworkError;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getBaseDelayMs ()J
+	public final fun getJitterFactor ()D
+	public final fun getMaxDelayMs ()J
+	public final fun getRetryOnHttpStatus ()Lkotlin/jvm/functions/Function1;
+	public fun shouldRetry (ILio/github/oyedsamu/caterktor/NetworkRequest;Lio/github/oyedsamu/caterktor/NetworkResponse;Lio/github/oyedsamu/caterktor/NetworkError;)Z
 }
 
 public final class io/github/oyedsamu/caterktor/Headers {
@@ -151,12 +165,38 @@ public final class io/github/oyedsamu/caterktor/KtorTransport : io/github/oyedsa
 	public final fun getHttpClient ()Lio/ktor/client/HttpClient;
 }
 
+public final class io/github/oyedsamu/caterktor/LogLevel : java/lang/Enum {
+	public static final field Basic Lio/github/oyedsamu/caterktor/LogLevel;
+	public static final field Body Lio/github/oyedsamu/caterktor/LogLevel;
+	public static final field Headers Lio/github/oyedsamu/caterktor/LogLevel;
+	public static final field None Lio/github/oyedsamu/caterktor/LogLevel;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/LogLevel;
+	public static fun values ()[Lio/github/oyedsamu/caterktor/LogLevel;
+}
+
+public final class io/github/oyedsamu/caterktor/LoggerInterceptor : io/github/oyedsamu/caterktor/Interceptor {
+	public static final field Companion Lio/github/oyedsamu/caterktor/LoggerInterceptor$Companion;
+	public fun <init> (Lio/github/oyedsamu/caterktor/LogLevel;Ljava/util/Set;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/LogLevel;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getLevel ()Lio/github/oyedsamu/caterktor/LogLevel;
+	public final fun getLogger ()Lkotlin/jvm/functions/Function1;
+	public final fun getSensitiveHeaders ()Ljava/util/Set;
+	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/oyedsamu/caterktor/LoggerInterceptor$Companion {
+	public final fun getDefaultSensitiveHeaders ()Ljava/util/Set;
+}
+
 public final class io/github/oyedsamu/caterktor/NetworkClient {
 	public final fun describePipeline ()Ljava/util/List;
 	public final fun execute (Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun execute$default (Lio/github/oyedsamu/caterktor/NetworkClient;Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun getBaseUrl ()Ljava/lang/String;
 	public final fun getConverters ()Ljava/util/List;
+	public final fun getEvents ()Lkotlinx/coroutines/flow/SharedFlow;
+	public final fun tryEmitEvent (Lio/github/oyedsamu/caterktor/NetworkEvent;)V
 }
 
 public final class io/github/oyedsamu/caterktor/NetworkClientExtensionsKt {
@@ -256,6 +296,76 @@ public final class io/github/oyedsamu/caterktor/NetworkError$Unknown : io/github
 	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkError$Unknown;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkError$Unknown;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getCause ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/oyedsamu/caterktor/NetworkEvent {
+	public abstract fun getRequestId ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkEvent$CallFailure : io/github/oyedsamu/caterktor/NetworkEvent {
+	public fun <init> (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkError;JI)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/github/oyedsamu/caterktor/NetworkError;
+	public final fun component3 ()J
+	public final fun component4 ()I
+	public final fun copy (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkError;JI)Lio/github/oyedsamu/caterktor/NetworkEvent$CallFailure;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkEvent$CallFailure;Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkError;JIILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkEvent$CallFailure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAttempts ()I
+	public final fun getDurationMs ()J
+	public final fun getError ()Lio/github/oyedsamu/caterktor/NetworkError;
+	public fun getRequestId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkEvent$CallStart : io/github/oyedsamu/caterktor/NetworkEvent {
+	public fun <init> (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkRequest;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/github/oyedsamu/caterktor/NetworkRequest;
+	public final fun copy (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkRequest;)Lio/github/oyedsamu/caterktor/NetworkEvent$CallStart;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkEvent$CallStart;Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkRequest;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkEvent$CallStart;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRequest ()Lio/github/oyedsamu/caterktor/NetworkRequest;
+	public fun getRequestId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkEvent$CallSuccess : io/github/oyedsamu/caterktor/NetworkEvent {
+	public synthetic fun <init> (Ljava/lang/String;IJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2-ob9oPJY ()I
+	public final fun component3 ()J
+	public final fun component4 ()I
+	public final fun copy-ChMndQQ (Ljava/lang/String;IJI)Lio/github/oyedsamu/caterktor/NetworkEvent$CallSuccess;
+	public static synthetic fun copy-ChMndQQ$default (Lio/github/oyedsamu/caterktor/NetworkEvent$CallSuccess;Ljava/lang/String;IJIILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkEvent$CallSuccess;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAttempts ()I
+	public final fun getDurationMs ()J
+	public fun getRequestId ()Ljava/lang/String;
+	public final fun getStatus-ob9oPJY ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkEvent$ResponseReceived : io/github/oyedsamu/caterktor/NetworkEvent {
+	public synthetic fun <init> (Ljava/lang/String;ILio/github/oyedsamu/caterktor/Headers;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2-ob9oPJY ()I
+	public final fun component3 ()Lio/github/oyedsamu/caterktor/Headers;
+	public final fun component4 ()J
+	public final fun component5 ()I
+	public final fun copy-cItQE-M (Ljava/lang/String;ILio/github/oyedsamu/caterktor/Headers;JI)Lio/github/oyedsamu/caterktor/NetworkEvent$ResponseReceived;
+	public static synthetic fun copy-cItQE-M$default (Lio/github/oyedsamu/caterktor/NetworkEvent$ResponseReceived;Ljava/lang/String;ILio/github/oyedsamu/caterktor/Headers;JIILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkEvent$ResponseReceived;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAttempts ()I
+	public final fun getDurationMs ()J
+	public final fun getHeaders ()Lio/github/oyedsamu/caterktor/Headers;
+	public fun getRequestId ()Ljava/lang/String;
+	public final fun getStatus-ob9oPJY ()I
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -381,12 +491,55 @@ public final class io/github/oyedsamu/caterktor/RequestBody$Bytes : io/github/oy
 	public final fun getContentType ()Ljava/lang/String;
 }
 
+public final class io/github/oyedsamu/caterktor/RetryInterceptor : io/github/oyedsamu/caterktor/PrivilegedInterceptor {
+	public fun <init> ()V
+	public fun <init> (ILio/github/oyedsamu/caterktor/RetryPolicy;Z)V
+	public synthetic fun <init> (ILio/github/oyedsamu/caterktor/RetryPolicy;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getMaxAttempts ()I
+	public final fun getPolicy ()Lio/github/oyedsamu/caterktor/RetryPolicy;
+	public final fun getRetryNonIdempotent ()Z
+	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class io/github/oyedsamu/caterktor/RetryPolicy {
+	public abstract fun computeDelayMs (ILio/github/oyedsamu/caterktor/NetworkRequest;Lio/github/oyedsamu/caterktor/NetworkResponse;Lio/github/oyedsamu/caterktor/NetworkError;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun shouldRetry (ILio/github/oyedsamu/caterktor/NetworkRequest;Lio/github/oyedsamu/caterktor/NetworkResponse;Lio/github/oyedsamu/caterktor/NetworkError;)Z
+}
+
 public final class io/github/oyedsamu/caterktor/SerializationPhase : java/lang/Enum {
 	public static final field Decoding Lio/github/oyedsamu/caterktor/SerializationPhase;
 	public static final field Encoding Lio/github/oyedsamu/caterktor/SerializationPhase;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/SerializationPhase;
 	public static fun values ()[Lio/github/oyedsamu/caterktor/SerializationPhase;
+}
+
+public final class io/github/oyedsamu/caterktor/TimeoutConfig {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Long;
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)Lio/github/oyedsamu/caterktor/TimeoutConfig;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/TimeoutConfig;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/TimeoutConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConnectTimeoutMs ()Ljava/lang/Long;
+	public final fun getRequestTimeoutMs ()Ljava/lang/Long;
+	public final fun getSocketTimeoutMs ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/TimeoutConfig$Builder {
+	public fun <init> ()V
+	public final fun build ()Lio/github/oyedsamu/caterktor/TimeoutConfig;
+	public final fun getConnectTimeoutMs ()Ljava/lang/Long;
+	public final fun getRequestTimeoutMs ()Ljava/lang/Long;
+	public final fun getSocketTimeoutMs ()Ljava/lang/Long;
+	public final fun setConnectTimeoutMs (Ljava/lang/Long;)V
+	public final fun setRequestTimeoutMs (Ljava/lang/Long;)V
+	public final fun setSocketTimeoutMs (Ljava/lang/Long;)V
 }
 
 public final class io/github/oyedsamu/caterktor/TimeoutKind : java/lang/Enum {

@@ -2,8 +2,14 @@ package io.github.oyedsamu.caterktor
 
 import kotlin.random.Random
 import kotlin.reflect.KType
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.time.TimeSource
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * The CaterKtor client — a constructed, disposable object that walks a request
@@ -35,7 +41,32 @@ public class NetworkClient internal constructor(
     internal val interceptors: List<Interceptor>,
     @PublishedApi internal val converters: List<BodyConverter> = emptyList(),
     @PublishedApi internal val baseUrl: String? = null,
+    internal val timeoutConfig: TimeoutConfig? = null,
 ) {
+
+    private val _events: MutableSharedFlow<NetworkEvent> = MutableSharedFlow(
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+
+    /**
+     * A [SharedFlow] that emits a [NetworkEvent] for every request processed by
+     * this client.
+     *
+     * The flow is hot and replay-less — only events emitted **after** a collector
+     * subscribes are received. Events are emitted with `tryEmit` so a slow
+     * collector never blocks the request pipeline.
+     *
+     * ## Concurrency
+     * Multiple concurrent requests emit to the same flow. [NetworkEvent.requestId]
+     * links related events.
+     */
+    public val events: SharedFlow<NetworkEvent> = _events.asSharedFlow()
+
+    @PublishedApi
+    internal fun tryEmitEvent(event: NetworkEvent): Unit {
+        _events.tryEmit(event)
+    }
     /**
      * Execute [request] through the full interceptor pipeline.
      *
@@ -99,28 +130,79 @@ internal suspend fun <T : Any> NetworkClient.call(
 ): NetworkResult<T> {
     val requestId = generateRequestId()
     val mark = TimeSource.Monotonic.markNow()
+    tryEmitEvent(NetworkEvent.CallStart(requestId, request))
+
+    // Compute the effective timeout: the minimum of requestTimeoutMs and
+    // the remaining millis until the deadline (if set).
+    val requestTimeoutMs = timeoutConfig?.requestTimeoutMs
+    val deadlineRemainingMs: Long? = deadline?.let {
+        (it.toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds()).coerceAtLeast(0L)
+    }
+    val effectiveTimeoutMs: Long? = when {
+        requestTimeoutMs != null && deadlineRemainingMs != null ->
+            minOf(requestTimeoutMs, deadlineRemainingMs)
+        requestTimeoutMs != null -> requestTimeoutMs
+        deadlineRemainingMs != null -> deadlineRemainingMs
+        else -> null
+    }
+
     return try {
-        val response = execute(request, deadline)
+        val response: NetworkResponse? = if (effectiveTimeoutMs != null) {
+            withTimeoutOrNull(effectiveTimeoutMs) { execute(request, deadline) }
+        } else {
+            execute(request, deadline)
+        }
+
+        if (response == null) {
+            // withTimeoutOrNull returned null → timeout expired
+            val durationMs = mark.elapsedNow().inWholeMilliseconds
+            val isDeadline = deadlineRemainingMs != null &&
+                deadlineRemainingMs <= (requestTimeoutMs ?: Long.MAX_VALUE)
+            val error = NetworkError.Timeout(
+                kind = if (isDeadline) TimeoutKind.Deadline else TimeoutKind.Request,
+            )
+            tryEmitEvent(NetworkEvent.CallFailure(requestId, error, durationMs, 1))
+            return NetworkResult.Failure(
+                error = error,
+                durationMs = durationMs,
+                attempts = 1,
+                requestId = requestId,
+            )
+        }
+
         val durationMs = mark.elapsedNow().inWholeMilliseconds
+        tryEmitEvent(NetworkEvent.ResponseReceived(requestId, response.status, response.headers, durationMs, 1))
+
         if (response.status.isClientError || response.status.isServerError) {
             val raw = RawBody(response.body, response.headers["Content-Type"])
+            val error = NetworkError.Http(
+                status = response.status,
+                headers = response.headers,
+                body = ErrorBody(raw = raw, parsed = null),
+            )
+            tryEmitEvent(NetworkEvent.CallFailure(requestId, error, durationMs, 1))
             NetworkResult.Failure(
-                error = NetworkError.Http(
-                    status = response.status,
-                    headers = response.headers,
-                    body = ErrorBody(raw = raw, parsed = null),
-                ),
+                error = error,
                 durationMs = durationMs,
                 attempts = 1,
                 requestId = requestId,
             )
         } else {
-            decodeResponse(response, responseType, durationMs, requestId)
+            val result = decodeResponse<T>(response, responseType, durationMs, requestId)
+            when (result) {
+                is NetworkResult.Success ->
+                    tryEmitEvent(NetworkEvent.CallSuccess(requestId, result.status, durationMs, 1))
+                is NetworkResult.Failure ->
+                    tryEmitEvent(NetworkEvent.CallFailure(requestId, result.error, durationMs, 1))
+            }
+            result
         }
     } catch (e: NetworkErrorException) {
+        val durationMs = mark.elapsedNow().inWholeMilliseconds
+        tryEmitEvent(NetworkEvent.CallFailure(requestId, e.error, durationMs, 1))
         NetworkResult.Failure(
             error = e.error,
-            durationMs = mark.elapsedNow().inWholeMilliseconds,
+            durationMs = durationMs,
             attempts = 1,
             requestId = requestId,
         )

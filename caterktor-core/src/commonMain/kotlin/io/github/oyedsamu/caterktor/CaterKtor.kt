@@ -49,6 +49,23 @@ public class CaterKtorBuilder internal constructor() {
 
     private val _interceptors: MutableList<Interceptor> = mutableListOf()
     private val _converters: MutableList<BodyConverter> = mutableListOf()
+    private var _timeoutConfig: TimeoutConfig? = null
+
+    /**
+     * Configure per-attempt and advisory connection timeouts.
+     *
+     * [TimeoutConfig.requestTimeoutMs] is enforced by [NetworkClient] via a
+     * coroutine timeout around each pipeline execution. [TimeoutConfig.connectTimeoutMs]
+     * and [TimeoutConfig.socketTimeoutMs] are advisory — pass them to the engine
+     * factory for enforcement at the transport level.
+     */
+    public fun timeout(block: TimeoutConfig.Builder.() -> Unit): CaterKtorBuilder = apply {
+        _timeoutConfig = TimeoutConfig.Builder().apply(block).build()
+    }
+
+    /** The currently configured [TimeoutConfig], or `null` if none was set. */
+    public val timeoutConfig: TimeoutConfig?
+        get() = _timeoutConfig
 
     /**
      * The terminal transport. Must be set before [build] is invoked, either
@@ -101,6 +118,7 @@ public class CaterKtorBuilder internal constructor() {
             interceptors = _interceptors.toList(),
             converters = _converters.toList(),
             baseUrl = baseUrl,
+            timeoutConfig = _timeoutConfig,
         )
     }
 }
