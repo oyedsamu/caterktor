@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  release:
+    name: Publish to Maven Central
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Validate signing secrets
+        run: |
+          test -n "${{ secrets.SIGNING_KEY_ID }}" || (echo "SIGNING_KEY_ID not set" && exit 1)
+          test -n "${{ secrets.SIGNING_KEY }}" || (echo "SIGNING_KEY not set" && exit 1)
+          test -n "${{ secrets.SIGNING_PASSWORD }}" || (echo "SIGNING_PASSWORD not set" && exit 1)
+          test -n "${{ secrets.SONATYPE_USERNAME }}" || (echo "SONATYPE_USERNAME not set" && exit 1)
+          test -n "${{ secrets.SONATYPE_PASSWORD }}" || (echo "SONATYPE_PASSWORD not set" && exit 1)
+
+      - name: Run full verification
+        run: ./gradlew check apiCheck
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+
+      - name: Publish to Maven Local (smoke test)
+        run: ./gradlew publishToMavenLocal
+
+      - name: Publish to Maven Central
+        run: ./gradlew publish
+        env:
+          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
+          ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.SONATYPE_PASSWORD }}
