@@ -9,3 +9,4 @@ local.properties
 out/
 .DS_Store
 .claude/
+.docs/
