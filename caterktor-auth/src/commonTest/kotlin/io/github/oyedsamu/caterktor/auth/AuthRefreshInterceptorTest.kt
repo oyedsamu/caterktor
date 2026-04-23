@@ -16,6 +16,7 @@ import io.github.oyedsamu.caterktor.ResponseBody
 import io.github.oyedsamu.caterktor.TimeoutKind
 import io.github.oyedsamu.caterktor.Transport
 import io.github.oyedsamu.caterktor.get
+import kotlin.coroutines.ContinuationInterceptor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -98,6 +99,8 @@ class AuthRefreshInterceptorTest {
                         allUnauthorized.await()
                         "new"
                     },
+                    currentTimeMillis = { kotlin.time.Clock.System.now().toEpochMilliseconds() },
+                    refreshDispatcher = coroutineContext[ContinuationInterceptor]!!,
                 ),
             )
         }
@@ -150,6 +153,8 @@ class AuthRefreshInterceptorTest {
                         allUnauthorized.await()
                         error("refresh backend down")
                     },
+                    currentTimeMillis = { kotlin.time.Clock.System.now().toEpochMilliseconds() },
+                    refreshDispatcher = coroutineContext[ContinuationInterceptor]!!,
                 ),
             )
         }
@@ -165,6 +170,56 @@ class AuthRefreshInterceptorTest {
             assertIs<AuthRefreshFailedException>(error.cause)
         }
         assertEquals(1, refreshCalls.value())
+    }
+
+    @Test
+    fun unauthorizedResponseInFlightDuringRefreshSharesCompletedRefresh() = runTest {
+        val oldTokenCalls = SuspendCounter()
+        val refreshCalls = SuspendCounter()
+        val secondUnauthorizedEntered = CompletableDeferred<Unit>()
+        val releaseSecondUnauthorized = CompletableDeferred<Unit>()
+        val client = CaterKtor {
+            transport = Transport { request ->
+                when (request.headers["Authorization"]) {
+                    "Bearer old" -> {
+                        if (oldTokenCalls.increment() == 2) {
+                            secondUnauthorizedEntered.complete(Unit)
+                            releaseSecondUnauthorized.await()
+                        }
+                        response(HttpStatus.Unauthorized)
+                    }
+                    "Bearer new" -> response(HttpStatus.NoContent)
+                    else -> response(HttpStatus.BadRequest)
+                }
+            }
+            addInterceptor(
+                AuthRefreshInterceptor(
+                    tokenProvider = { "old" },
+                    refreshToken = {
+                        refreshCalls.increment()
+                        secondUnauthorizedEntered.await()
+                        "new"
+                    },
+                ),
+            )
+        }
+
+        try {
+            val first = async { client.get<Unit>("https://example.test/private/first") }
+            while (refreshCalls.value() == 0) {
+                yield()
+            }
+
+            val second = async { client.get<Unit>("https://example.test/private/second") }
+            secondUnauthorizedEntered.await()
+
+            assertIs<NetworkResult.Success<Unit>>(first.await())
+            releaseSecondUnauthorized.complete(Unit)
+            assertIs<NetworkResult.Success<Unit>>(second.await())
+            assertEquals(1, refreshCalls.value())
+        } finally {
+            client.close()
+        }
     }
 
     @Test
@@ -519,6 +574,8 @@ class AuthRefreshInterceptorTest {
                             allUnauthorized.await()
                             "new"
                         },
+                        currentTimeMillis = { kotlin.time.Clock.System.now().toEpochMilliseconds() },
+                        refreshDispatcher = coroutineContext[ContinuationInterceptor]!!,
                     ),
                 )
             }
@@ -566,6 +623,8 @@ class AuthRefreshInterceptorTest {
                         onRefreshFailed = {
                             failureNotifications.increment()
                         },
+                        currentTimeMillis = { kotlin.time.Clock.System.now().toEpochMilliseconds() },
+                        refreshDispatcher = coroutineContext[ContinuationInterceptor]!!,
                     ),
                 )
             }

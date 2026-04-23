@@ -17,6 +17,7 @@ import io.github.oyedsamu.caterktor.ResponseBody
 import io.github.oyedsamu.caterktor.TimeoutKind
 import io.github.oyedsamu.caterktor.buffered
 import io.github.oyedsamu.caterktor.proceedForAttempt
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -70,6 +71,8 @@ public class AuthRefreshBudgetExceededException(
  *
  * The interceptor performs single-flight refresh: concurrent 401 responses join
  * the same refresh job, then each waiting request retries with the shared token.
+ * Requests that were already in flight while a refresh was running also share
+ * that result if their 401 response arrives just after the refresh completes.
  * A caller cancelled while waiting does not cancel the shared refresh for other
  * callers.
  *
@@ -90,8 +93,9 @@ public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableIntercepto
     private val currentTimeMillis: () -> Long
 
     private val mutex = Mutex()
-    private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private var inFlightRefresh: Deferred<RefreshOutcome>? = null
+    private val refreshScope: CoroutineScope
+    private var refreshGeneration: Long = 0L
+    private var inFlightRefresh: RefreshFlight? = null
     private var windowStartMs: Long? = null
     private var failureNotifiedWindowStartMs: Long? = null
     private var refreshesInWindow: Int = 0
@@ -107,6 +111,7 @@ public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableIntercepto
         budget = budget,
         onRefreshFailed = onRefreshFailed,
         currentTimeMillis = { Clock.System.now().toEpochMilliseconds() },
+        refreshDispatcher = Dispatchers.Default,
     )
 
     internal constructor(
@@ -115,12 +120,14 @@ public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableIntercepto
         budget: RefreshBudget = RefreshBudget(),
         onRefreshFailed: suspend (Throwable) -> Unit = {},
         currentTimeMillis: () -> Long,
+        refreshDispatcher: CoroutineContext = Dispatchers.Default,
     ) {
         this.tokenProvider = tokenProvider
         this.refreshToken = refreshToken
         this.budget = budget
         this.onRefreshFailed = onRefreshFailed
         this.currentTimeMillis = currentTimeMillis
+        this.refreshScope = CoroutineScope(SupervisorJob() + refreshDispatcher)
     }
 
     /**
@@ -144,12 +151,13 @@ public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableIntercepto
         }
 
         val authorizedRequest = originalRequest.withBearerToken(tokenProvider())
+        val refreshSnapshot = refreshSnapshot()
         val response = chain.proceed(authorizedRequest)
         if (response.status != HttpStatus.Unauthorized) {
             return response
         }
 
-        val refreshedToken = refreshAfterUnauthorized(chain, response)
+        val refreshedToken = refreshAfterUnauthorized(chain, response, refreshSnapshot)
         return chain.proceedForAttempt(
             originalRequest.withBearerToken(refreshedToken),
             attempt = chain.attempt + 1,
@@ -159,9 +167,10 @@ public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableIntercepto
     private suspend fun refreshAfterUnauthorized(
         chain: Chain,
         response: NetworkResponse,
+        refreshSnapshot: RefreshSnapshot,
     ): String {
         val refresh = try {
-            singleFlightRefresh()
+            singleFlightRefresh(refreshSnapshot)
         } catch (e: AuthRefreshBudgetExceededException) {
             failRefresh(response, e)
         }
@@ -173,11 +182,26 @@ public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableIntercepto
         }
     }
 
-    private suspend fun singleFlightRefresh(): Deferred<RefreshOutcome> = mutex.withLock {
-        inFlightRefresh?.takeIf { it.isActive }?.let { return@withLock it }
+    private suspend fun refreshSnapshot(): RefreshSnapshot = mutex.withLock {
+        RefreshSnapshot(
+            generation = refreshGeneration,
+            activeFlightGeneration = inFlightRefresh
+                ?.takeIf { it.refresh.isActive }
+                ?.generation,
+        )
+    }
+
+    private suspend fun singleFlightRefresh(snapshot: RefreshSnapshot): Deferred<RefreshOutcome> = mutex.withLock {
+        inFlightRefresh?.let { flight ->
+            if (flight.refresh.isActive || flight.wasActiveFor(snapshot)) {
+                return@withLock flight.refresh
+            }
+        }
         inFlightRefresh = null
 
         consumeBudget()
+        val generation = refreshGeneration + 1L
+        refreshGeneration = generation
         val refresh = refreshScope.async {
             try {
                 RefreshOutcome.Success(refreshToken())
@@ -187,9 +211,12 @@ public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableIntercepto
                 RefreshOutcome.Failure(t)
             }
         }
-        inFlightRefresh = refresh
+        inFlightRefresh = RefreshFlight(generation, refresh)
         refresh
     }
+
+    private fun RefreshFlight.wasActiveFor(snapshot: RefreshSnapshot): Boolean =
+        generation > snapshot.generation || generation == snapshot.activeFlightGeneration
 
     private fun consumeBudget() {
         val nowMs = currentTimeMillis()
@@ -268,6 +295,16 @@ public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableIntercepto
         data class Cancelled(val cause: CancellationException) : RefreshOutcome
         data class Failure(val cause: Exception) : RefreshOutcome
     }
+
+    private data class RefreshSnapshot(
+        val generation: Long,
+        val activeFlightGeneration: Long?,
+    )
+
+    private data class RefreshFlight(
+        val generation: Long,
+        val refresh: Deferred<RefreshOutcome>,
+    )
 }
 
 private const val DEFAULT_ERROR_BODY_BYTES: Int = 10 * 1024 * 1024
