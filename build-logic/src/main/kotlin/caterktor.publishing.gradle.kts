@@ -19,9 +19,47 @@
  *
  * DO NOT change automaticRelease without TL sign-off.
  */
+import org.jetbrains.dokka.gradle.DokkaExtension
+import org.jetbrains.dokka.gradle.tasks.DokkaBaseTask
+import java.net.URI
+
 plugins {
     id("com.vanniktech.maven.publish")
     id("org.jetbrains.dokka")
+}
+
+configure<DokkaExtension> {
+    moduleName.set(project.name)
+    moduleVersion.set(project.version.toString())
+
+    val dokkaInclude = rootProject.layout.projectDirectory.file("docs/dokka/${project.name}.md")
+    val docsSourceRef = providers.gradleProperty("caterktor.docs.sourceRef").orElse("main")
+
+    dokkaSourceSets.configureEach {
+        if (dokkaInclude.asFile.exists()) {
+            includes.from(dokkaInclude)
+        }
+
+        sourceLink {
+            localDirectory.set(layout.projectDirectory.dir("src"))
+            remoteUrl.set(
+                docsSourceRef.map { sourceRef ->
+                    URI("https://github.com/oyedsamu/caterktor/tree/$sourceRef/${project.name}/src")
+                }
+            )
+            remoteLineSuffix.set("#L")
+        }
+    }
+
+    dokkaPublications.configureEach {
+        if (dokkaInclude.asFile.exists()) {
+            includes.from(dokkaInclude)
+        }
+    }
+}
+
+tasks.withType<DokkaBaseTask>().configureEach {
+    notCompatibleWithConfigurationCache("Dokka 2.0.0 tasks retain Gradle Project references.")
 }
 
 // ---------------------------------------------------------------------------

@@ -220,4 +220,31 @@ class NetworkClientTypedTest {
         assertIs<NetworkResult.Success<TestModel>>(result)
         assertEquals("https://api.test/users/42", seenUrl)
     }
+
+    @Test
+    fun get_appends_query_params_after_path_template_and_base_url_resolution() = runTest {
+        var seenUrl: String? = null
+        val engine = MockEngine { request ->
+            seenUrl = request.url.toString()
+            respond(
+                content = """{"name":"search","count":2}""".encodeToByteArray(),
+                status = HttpStatusCode.OK,
+                headers = headersOf("Content-Type", "application/json"),
+            )
+        }
+        val client = clientWith(baseUrl = "https://api.test/v1", engine = engine)
+
+        val result = client.get<TestModel>(
+            url = "users/{id}/items",
+            pathParams = mapOf("id" to "a/b"),
+            queryParams = QueryParameters {
+                add("tag", "kmp")
+                add("tag", "networking")
+                add("empty", null)
+            },
+        )
+
+        assertIs<NetworkResult.Success<TestModel>>(result)
+        assertEquals("https://api.test/v1/users/a%2Fb/items?tag=kmp&tag=networking", seenUrl)
+    }
 }

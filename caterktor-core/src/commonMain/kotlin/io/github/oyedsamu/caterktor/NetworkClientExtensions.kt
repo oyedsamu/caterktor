@@ -14,6 +14,8 @@ import kotlin.time.Instant
  *   Path templates are expanded via `expandPathTemplate` when [pathParams] is non-empty.
  * @param pathParams Template parameters to expand in [url], e.g. `mapOf("id" to "42")` for
  *   a [url] of `"users/{id}"`.
+ * @param queryParams Query parameters appended after path-template expansion and base URL
+ *   resolution. Values are percent-encoded and repeated names are preserved.
  * @param headers Additional request headers. Merged with any headers added by interceptors.
  * @param attributes Typed interceptor communication bag.
  * @param deadline Optional wall-clock deadline for the entire logical request.
@@ -22,11 +24,12 @@ import kotlin.time.Instant
 public suspend inline fun <reified T : Any> NetworkClient.get(
     url: String,
     pathParams: Map<String, Any> = emptyMap(),
+    queryParams: QueryParameters = QueryParameters.Empty,
     headers: Headers = Headers.Empty,
     attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
-    val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
+    val resolvedUrl = appendQueryParameters(resolveUrl(baseUrl, expandPathTemplate(url, pathParams)), queryParams)
     val request = NetworkRequest(HttpMethod.GET, resolvedUrl, headers, null, attributes)
     return call(request, typeOf<T>(), deadline)
 }
@@ -41,11 +44,12 @@ public suspend inline fun <reified T : Any> NetworkClient.get(
 public suspend inline fun <reified T : Any> NetworkClient.head(
     url: String,
     pathParams: Map<String, Any> = emptyMap(),
+    queryParams: QueryParameters = QueryParameters.Empty,
     headers: Headers = Headers.Empty,
     attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
-    val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
+    val resolvedUrl = appendQueryParameters(resolveUrl(baseUrl, expandPathTemplate(url, pathParams)), queryParams)
     val request = NetworkRequest(HttpMethod.HEAD, resolvedUrl, headers, null, attributes)
     return call(request, typeOf<T>(), deadline)
 }
@@ -59,11 +63,12 @@ public suspend inline fun <reified T : Any> NetworkClient.head(
 public suspend inline fun <reified T : Any> NetworkClient.delete(
     url: String,
     pathParams: Map<String, Any> = emptyMap(),
+    queryParams: QueryParameters = QueryParameters.Empty,
     headers: Headers = Headers.Empty,
     attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
-    val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
+    val resolvedUrl = appendQueryParameters(resolveUrl(baseUrl, expandPathTemplate(url, pathParams)), queryParams)
     val request = NetworkRequest(HttpMethod.DELETE, resolvedUrl, headers, null, attributes)
     return call(request, typeOf<T>(), deadline)
 }
@@ -78,6 +83,8 @@ public suspend inline fun <reified T : Any> NetworkClient.delete(
  * @param contentType The `Content-Type` for the request body. Default: `"application/json"`.
  * @param url Absolute URL or relative path (resolved against [NetworkClient]'s base URL).
  * @param pathParams Template parameters to expand in [url].
+ * @param queryParams Query parameters appended after path-template expansion and base URL
+ *   resolution. Values are percent-encoded and repeated names are preserved.
  * @param headers Additional request headers.
  * @param attributes Typed interceptor communication bag.
  * @param deadline Optional wall-clock deadline for the entire logical request.
@@ -88,11 +95,12 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.post(
     body: B,
     contentType: String = "application/json",
     pathParams: Map<String, Any> = emptyMap(),
+    queryParams: QueryParameters = QueryParameters.Empty,
     headers: Headers = Headers.Empty,
     attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
-    val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
+    val resolvedUrl = appendQueryParameters(resolveUrl(baseUrl, expandPathTemplate(url, pathParams)), queryParams)
     return callWithBody(
         resolvedUrl = resolvedUrl,
         method = HttpMethod.POST,
@@ -113,11 +121,12 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.put(
     body: B,
     contentType: String = "application/json",
     pathParams: Map<String, Any> = emptyMap(),
+    queryParams: QueryParameters = QueryParameters.Empty,
     headers: Headers = Headers.Empty,
     attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
-    val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
+    val resolvedUrl = appendQueryParameters(resolveUrl(baseUrl, expandPathTemplate(url, pathParams)), queryParams)
     return callWithBody(
         resolvedUrl = resolvedUrl,
         method = HttpMethod.PUT,
@@ -138,11 +147,12 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.patch
     body: B,
     contentType: String = "application/json",
     pathParams: Map<String, Any> = emptyMap(),
+    queryParams: QueryParameters = QueryParameters.Empty,
     headers: Headers = Headers.Empty,
     attributes: Attributes = Attributes.Empty,
     deadline: Instant? = null,
 ): NetworkResult<T> {
-    val resolvedUrl = resolveUrl(baseUrl, expandPathTemplate(url, pathParams))
+    val resolvedUrl = appendQueryParameters(resolveUrl(baseUrl, expandPathTemplate(url, pathParams)), queryParams)
     return callWithBody(
         resolvedUrl = resolvedUrl,
         method = HttpMethod.PATCH,

@@ -6,6 +6,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.io.IOException
@@ -219,6 +221,25 @@ class KtorTransportTest {
         )
 
         assertEquals(HttpStatus.InternalServerError, response.status)
-        assertContentEquals("boom".encodeToByteArray(), response.bodyBytes)
+        assertEquals("boom", response.bodyBytes.decodeToString())
+    }
+
+    @Test
+    fun close_does_not_close_caller_owned_http_client() = runTest {
+        val engine = MockEngine { _ ->
+            respond(content = "ok", status = HttpStatusCode.OK)
+        }
+        val callerOwnedClient = HttpClient(engine)
+        val transport = KtorTransport(callerOwnedClient, ownsHttpClient = false)
+
+        transport.execute(
+            NetworkRequest(method = HttpMethod.GET, url = "https://example.test/first"),
+        )
+        transport.close()
+
+        val response = callerOwnedClient.get("https://example.test/after-close")
+
+        assertEquals("ok", response.bodyAsText())
+        callerOwnedClient.close()
     }
 }

@@ -154,6 +154,24 @@ when (result) {
 }
 ```
 
+Typed helpers also build query strings without manual concatenation:
+
+```kotlin
+val page: NetworkResult<PokemonResponse> = client.get(
+    url = "pokemon",
+    queryParams = QueryParameters {
+        add("limit", 20)
+        add("offset", 40)
+        add("type", "electric")
+        add("type", "flying")
+    },
+)
+```
+
+`queryParameters(mapOf("limit" to 20, "offset" to 40))` is available when a
+map is the more natural shape. `null` values are omitted, repeated names are
+preserved, and names/values are percent-encoded.
+
 ---
 
 ## Core concepts
@@ -520,14 +538,12 @@ val client = CaterKtor {
     transport = OkHttpTransport()
     timeout {
         requestTimeoutMs = 30_000L   // per attempt
-        deadlineMs       = 60_000L   // across all attempts, retries, and refresh waits
     }
 }
 ```
 
-`deadlineMs` propagates through `Chain` so that retry delays and auth refresh waits both honor
-it. A request that exhausts the deadline surfaces `NetworkError.Timeout(kind = TimeoutKind.Deadline)`,
-regardless of which sub-operation was in flight.
+Per-call deadlines are passed to typed helpers through the `deadline` parameter and propagate
+through `Chain`, so retry delays and auth refresh waits can honor the same logical budget.
 
 ---
 
@@ -554,7 +570,9 @@ to find and update call sites when surfaces stabilise.
 
 ## What's next
 
-CaterKtor is at `0.1.0`. The foundation is stable and BCV-gated. Planned milestones:
+CaterKtor is at `0.1.0`. The foundation is stable and BCV-gated. The `0.1.1`
+patch line targets query-parameter ergonomics and the Ktor `3.4.3` patch
+baseline. Planned milestones:
 
 ### `0.2.0` — streaming, testing, observability
 - Streaming response download — `KtorTransport` will return `ResponseBody.Source` so large payloads are never buffered

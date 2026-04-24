@@ -25,6 +25,25 @@ internal fun resolveUrl(baseUrl: String?, path: String): String {
     }
 }
 
+@OptIn(ExperimentalCaterktor::class)
+@PublishedApi
+internal fun appendQueryParameters(url: String, queryParameters: QueryParameters): String {
+    if (queryParameters.isEmpty()) return url
+
+    val fragmentStart = url.indexOf('#')
+    val base = if (fragmentStart >= 0) url.substring(0, fragmentStart) else url
+    val fragment = if (fragmentStart >= 0) url.substring(fragmentStart) else ""
+    val separator = if ('?' in base) {
+        if (base.endsWith("?") || base.endsWith("&")) "" else "&"
+    } else {
+        "?"
+    }
+    val encodedQuery = queryParameters.entries.joinToString("&") { entry ->
+        "${percentEncodeQueryComponent(entry.name)}=${percentEncodeQueryComponent(entry.value)}"
+    }
+    return base + separator + encodedQuery + fragment
+}
+
 /**
  * Expands a path template by replacing `{paramName}` placeholders with
  * URL-path-encoded values from [params] (R3).
@@ -77,6 +96,20 @@ private fun extractOrigin(url: String): String {
 
 /** Percent-encodes a single path segment value. Unreserved chars are kept as-is. */
 private fun percentEncodePathSegment(value: String): String = buildString {
+    for (char in value) {
+        if (char.isUnreserved()) {
+            append(char)
+        } else {
+            val bytes = char.toString().encodeToByteArray()
+            for (byte in bytes) {
+                append('%')
+                append(byte.toUByte().toString(16).padStart(2, '0').uppercase())
+            }
+        }
+    }
+}
+
+private fun percentEncodeQueryComponent(value: String): String = buildString {
     for (char in value) {
         if (char.isUnreserved()) {
             append(char)

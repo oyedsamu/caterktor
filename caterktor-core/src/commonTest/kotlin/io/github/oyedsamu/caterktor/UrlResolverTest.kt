@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 import kotlin.test.Test
@@ -95,6 +97,48 @@ class UrlResolverTest {
         assertEquals(
             "users/{id}",
             expandPathTemplate("users/{id}", emptyMap()),
+        )
+    }
+
+    @Test
+    fun append_query_parameters_adds_encoded_query_to_url_without_query() {
+        assertEquals(
+            "https://api.test/search?q=hello%20world&page=2",
+            appendQueryParameters(
+                "https://api.test/search",
+                QueryParameters {
+                    add("q", "hello world")
+                    add("page", 2)
+                },
+            ),
+        )
+    }
+
+    @Test
+    fun append_query_parameters_preserves_existing_query_and_fragment() {
+        assertEquals(
+            "https://api.test/search?existing=true&q=kmp#section",
+            appendQueryParameters(
+                "https://api.test/search?existing=true#section",
+                QueryParameters { add("q", "kmp") },
+            ),
+        )
+    }
+
+    @Test
+    fun append_query_parameters_preserves_repeated_keys_and_skips_nulls_from_map() {
+        assertEquals(
+            "https://api.test/items?tag=kmp&tag=ktor&limit=20",
+            appendQueryParameters(
+                "https://api.test/items",
+                queryParameters(
+                    mapOf(
+                        "tag" to listOf("kmp", null, "ktor"),
+                        "unused" to null,
+                        "limit" to 20,
+                    ),
+                ),
+            ),
         )
     }
 }
