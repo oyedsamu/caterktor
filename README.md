@@ -4,7 +4,7 @@
 
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.0-brightgreen)](https://central.sonatype.com/search?q=io.github.oyedsamu)
+[![Version](https://img.shields.io/badge/version-0.1.1-brightgreen)](https://central.sonatype.com/search?q=io.github.oyedsamu)
 [![API](https://img.shields.io/badge/API-BCV%20gated-7F52FF)](https://github.com/Kotlin/binary-compatibility-validator)
 
 ---
@@ -46,7 +46,7 @@ One object. Explicit ordering. Typed results. Correct concurrency semantics.
 ```toml
 # gradle/libs.versions.toml
 [versions]
-caterktor = "0.1.0"
+caterktor = "0.1.1"
 
 [libraries]
 caterktor-core              = { module = "io.github.oyedsamu:caterktor-core",              version.ref = "caterktor" }
@@ -94,13 +94,13 @@ kotlin {
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.oyedsamu:caterktor-core:0.1.0")
-    implementation("io.github.oyedsamu:caterktor-ktor:0.1.0")
-    implementation("io.github.oyedsamu:caterktor-engine-okhttp:0.1.0")
-    implementation("io.github.oyedsamu:caterktor-auth:0.1.0")
-    implementation("io.github.oyedsamu:caterktor-serialization-json:0.1.0")
-    implementation("io.github.oyedsamu:caterktor-logging:0.1.0")
-    testImplementation("io.github.oyedsamu:caterktor-testing:0.1.0")
+    implementation("io.github.oyedsamu:caterktor-core:0.1.1")
+    implementation("io.github.oyedsamu:caterktor-ktor:0.1.1")
+    implementation("io.github.oyedsamu:caterktor-engine-okhttp:0.1.1")
+    implementation("io.github.oyedsamu:caterktor-auth:0.1.1")
+    implementation("io.github.oyedsamu:caterktor-serialization-json:0.1.1")
+    implementation("io.github.oyedsamu:caterktor-logging:0.1.1")
+    testImplementation("io.github.oyedsamu:caterktor-testing:0.1.1")
 }
 ```
 
@@ -108,11 +108,11 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.oyedsamu:caterktor-core:0.1.0")
-    implementation("io.github.oyedsamu:caterktor-ktor:0.1.0")
-    implementation("io.github.oyedsamu:caterktor-engine-cio:0.1.0")
-    implementation("io.github.oyedsamu:caterktor-serialization-json:0.1.0")
-    testImplementation("io.github.oyedsamu:caterktor-testing:0.1.0")
+    implementation("io.github.oyedsamu:caterktor-core:0.1.1")
+    implementation("io.github.oyedsamu:caterktor-ktor:0.1.1")
+    implementation("io.github.oyedsamu:caterktor-engine-cio:0.1.1")
+    implementation("io.github.oyedsamu:caterktor-serialization-json:0.1.1")
+    testImplementation("io.github.oyedsamu:caterktor-testing:0.1.1")
 }
 ```
 
@@ -570,9 +570,9 @@ to find and update call sites when surfaces stabilise.
 
 ## What's next
 
-CaterKtor is at `0.1.0`. The foundation is stable and BCV-gated. The `0.1.1`
-patch line targets query-parameter ergonomics and the Ktor `3.4.3` patch
-baseline. Planned milestones:
+CaterKtor is at `0.1.1`. The foundation is stable and BCV-gated. This patch
+line adds query-parameter ergonomics, a Ktor `3.4.3` baseline, lifecycle
+regression coverage, and complete aggregate Dokka docs. Planned milestones:
 
 ### `0.2.0` — streaming, testing, observability
 - Streaming response download — `KtorTransport` will return `ResponseBody.Source` so large payloads are never buffered

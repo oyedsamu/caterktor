@@ -33,7 +33,12 @@ configure<DokkaExtension> {
     moduleVersion.set(project.version.toString())
 
     val dokkaInclude = rootProject.layout.projectDirectory.file("docs/dokka/${project.name}.md")
-    val docsSourceRef = providers.gradleProperty("caterktor.docs.sourceRef").orElse("main")
+    val docsSourceRef = providers.gradleProperty("caterktor.docs.sourceRef").orElse(
+        provider {
+            val releaseVersion = project.version.toString()
+            if (releaseVersion.endsWith("-SNAPSHOT")) "main" else "v$releaseVersion"
+        }
+    )
 
     dokkaSourceSets.configureEach {
         if (dokkaInclude.asFile.exists()) {
