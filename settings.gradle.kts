@@ -11,10 +11,28 @@ plugins {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // PREFER_SETTINGS allows Kotlin/JS toolchain setup (Node.js distribution
+    // repository) to add project-level repositories without breaking the build.
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
+        // Required by Kotlin/JS to download the Node.js distribution used for tests.
+        ivy {
+            name = "Node.js"
+            setUrl("https://nodejs.org/dist")
+            patternLayout { artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]") }
+            metadataSources { artifact() }
+            content { includeModule("org.nodejs", "node") }
+        }
+        // Required by Kotlin/JS for Yarn package manager used by browser targets.
+        ivy {
+            name = "Yarn"
+            setUrl("https://github.com/yarnpkg/yarn/releases/download")
+            patternLayout { artifact("v[revision]/[artifact](-v[revision]).[ext]") }
+            metadataSources { artifact() }
+            content { includeModule("com.yarnpkg", "yarn") }
+        }
     }
 }
 
@@ -24,6 +42,7 @@ includeBuild("build-logic")
 
 include(
     ":caterktor-core",
+    ":caterktor-connectivity",
     ":caterktor-ktor",
     ":caterktor-serialization-json",
     ":caterktor-serialization-protobuf",
@@ -34,6 +53,8 @@ include(
     ":caterktor-logging",
     ":caterktor-auth",
     ":caterktor-testing",
+    ":caterktor-websocket",
+    ":caterktor-sse",
     ":caterktor-sample",
     // caterktor-otel: reserved for Wave 12 OpenTelemetry integration.
     //   Excluded from the build graph until a stable KMP OTel SDK exists.

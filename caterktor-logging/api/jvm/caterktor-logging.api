@@ -25,6 +25,12 @@ public final class io/github/oyedsamu/caterktor/logging/LoggerInterceptor$Compan
 	public final fun getDefaultSensitiveHeaders ()Ljava/util/Set;
 }
 
+public final class io/github/oyedsamu/caterktor/logging/NetworkEventLogger {
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public final fun getLogger ()Lkotlin/jvm/functions/Function1;
+	public final fun log (Lio/github/oyedsamu/caterktor/NetworkEvent;)V
+}
+
 public final class io/github/oyedsamu/caterktor/logging/RedactionEngine {
 	public static final field Companion Lio/github/oyedsamu/caterktor/logging/RedactionEngine$Companion;
 	public static final field DefaultReplacement Ljava/lang/String;
@@ -39,6 +45,7 @@ public final class io/github/oyedsamu/caterktor/logging/RedactionEngine {
 	public final fun getReplacement ()Ljava/lang/String;
 	public final fun getSuppressBinaryBodies ()Z
 	public final fun redactBody (Ljava/lang/String;[B)Ljava/lang/String;
+	public final fun redactFormBody (Lio/github/oyedsamu/caterktor/RequestBody$Form;)Ljava/lang/String;
 	public final fun redactHeader (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public final fun redactTextBody (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public final fun redactUrl (Ljava/lang/String;)Ljava/lang/String;

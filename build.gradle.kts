@@ -20,6 +20,7 @@ plugins {
 
 val documentedProjects = listOf(
     "caterktor-core",
+    "caterktor-connectivity",
     "caterktor-ktor",
     "caterktor-serialization-json",
     "caterktor-serialization-protobuf",
@@ -30,6 +31,8 @@ val documentedProjects = listOf(
     "caterktor-logging",
     "caterktor-auth",
     "caterktor-testing",
+    "caterktor-websocket",
+    "caterktor-sse",
 )
 
 dependencies {
@@ -75,6 +78,7 @@ val validateDokkaPublication by tasks.registering {
     val requiredPages = listOf(
         "index.html",
         "caterktor-core/io.github.oyedsamu.caterktor/index.html",
+        "caterktor-connectivity/io.github.oyedsamu.caterktor.connectivity/index.html",
         "caterktor-ktor/io.github.oyedsamu.caterktor/index.html",
         "caterktor-auth/io.github.oyedsamu.caterktor.auth/index.html",
         "caterktor-logging/io.github.oyedsamu.caterktor.logging/index.html",
@@ -85,6 +89,8 @@ val validateDokkaPublication by tasks.registering {
         "caterktor-engine-okhttp/io.github.oyedsamu.caterktor.engine.okhttp/index.html",
         "caterktor-engine-darwin/io.github.oyedsamu.caterktor.engine.darwin/index.html",
         "caterktor-engine-cio/io.github.oyedsamu.caterktor.engine.cio/index.html",
+        "caterktor-websocket/io.github.oyedsamu.caterktor.websocket/index.html",
+        "caterktor-sse/io.github.oyedsamu.caterktor.sse/index.html",
     )
     val requiredSymbols = listOf(
         "NetworkClient",
@@ -92,6 +98,10 @@ val validateDokkaPublication by tasks.registering {
         "AuthRefreshInterceptor",
         "LoggerInterceptor",
         "FakeTransport",
+        "CaterktorHttpServer",
+        "ConnectivityInterceptor",
+        "WebSocketFrame",
+        "SseEvent",
     )
 
     doLast {
