@@ -1,6 +1,7 @@
 package io.github.oyedsamu.caterktor.logging
 
 import io.github.oyedsamu.caterktor.ExperimentalCaterktor
+import io.github.oyedsamu.caterktor.RequestBody
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -81,6 +82,25 @@ public class RedactionEngine(
         }
 
         return applyRegexRules(prefix + redactedQuery + suffix)
+    }
+
+    /**
+     * Redact sensitive field values in a form body for logging.
+     *
+     * Field names matching [queryParameterNames] (case-insensitive) have their
+     * values replaced with [replacement]. The result is human-readable plain
+     * text, not URL-encoded wire format.
+     */
+    @OptIn(ExperimentalCaterktor::class)
+    public fun redactFormBody(body: RequestBody.Form): String {
+        val redacted = body.fields.joinToString("&") { field ->
+            if (field.name.lowercase() in queryParameterNamesLower) {
+                "${field.name}=$replacement"
+            } else {
+                "${field.name}=${field.value}"
+            }
+        }
+        return applyRegexRules(redacted)
     }
 
     /**

@@ -99,6 +99,18 @@ public sealed interface NetworkError {
     ) : NetworkError
 
     /**
+     * The device has no network connectivity. Emitted by [ConnectivityInterceptor]
+     * (from `caterktor-connectivity`) when a request fails with [ConnectionFailed]
+     * and the [ConnectivityProbe] reports the device is offline.
+     *
+     * This variant is only produced when the opt-in `caterktor-connectivity` module
+     * is on the classpath and a [ConnectivityInterceptor] is installed.
+     */
+    public data class Offline(
+        override val cause: Throwable? = null,
+    ) : NetworkError
+
+    /**
      * An error that does not fit any other category. [cause] is guaranteed
      * non-null for this variant.
      *
