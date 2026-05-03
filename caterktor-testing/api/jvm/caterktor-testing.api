@@ -3,6 +3,21 @@ public final class io/github/oyedsamu/caterktor/testing/AssertionsKt {
 	public static final fun assertThat (Lio/github/oyedsamu/caterktor/NetworkResponse;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/NetworkResponse;
 }
 
+public final class io/github/oyedsamu/caterktor/testing/CaterktorHttpServer : java/lang/AutoCloseable {
+	public fun <init> ()V
+	public final fun clearRequests ()Lio/github/oyedsamu/caterktor/testing/CaterktorHttpServer;
+	public final fun client (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/NetworkClient;
+	public static synthetic fun client$default (Lio/github/oyedsamu/caterktor/testing/CaterktorHttpServer;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkClient;
+	public fun close ()V
+	public final fun enqueue (Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/CaterktorHttpServer;
+	public final fun enqueue-K5QOUhE (ILio/github/oyedsamu/caterktor/Headers;[B)Lio/github/oyedsamu/caterktor/testing/CaterktorHttpServer;
+	public static synthetic fun enqueue-K5QOUhE$default (Lio/github/oyedsamu/caterktor/testing/CaterktorHttpServer;ILio/github/oyedsamu/caterktor/Headers;[BILjava/lang/Object;)Lio/github/oyedsamu/caterktor/testing/CaterktorHttpServer;
+	public final fun getBaseUrl ()Ljava/lang/String;
+	public final fun getRequests ()Ljava/util/List;
+	public final fun route (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/CaterktorHttpServer;
+	public final fun routes (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/CaterktorHttpServer;
+}
+
 public final class io/github/oyedsamu/caterktor/testing/CaterktorTestServer : io/github/oyedsamu/caterktor/CloseableTransport {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;)V
@@ -16,6 +31,7 @@ public final class io/github/oyedsamu/caterktor/testing/CaterktorTestServer : io
 	public final fun getBaseUrl ()Ljava/lang/String;
 	public final fun getRequests ()Ljava/util/List;
 	public final fun route (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/CaterktorTestServer;
+	public final fun routes (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/CaterktorTestServer;
 }
 
 public final class io/github/oyedsamu/caterktor/testing/FakeNetworkClient {
@@ -31,10 +47,17 @@ public final class io/github/oyedsamu/caterktor/testing/FakeNetworkClient {
 	public final fun getTransport ()Lio/github/oyedsamu/caterktor/testing/FakeTransport;
 }
 
+public final class io/github/oyedsamu/caterktor/testing/FakeRequest {
+	public fun <init> (Lio/github/oyedsamu/caterktor/NetworkRequest;Ljava/util/Map;)V
+	public final fun getPathParameters ()Ljava/util/Map;
+	public final fun getRequest ()Lio/github/oyedsamu/caterktor/NetworkRequest;
+}
+
 public final class io/github/oyedsamu/caterktor/testing/FakeTransport : io/github/oyedsamu/caterktor/CloseableTransport {
 	public fun <init> ()V
 	public fun <init> (Lio/github/oyedsamu/caterktor/NetworkResponse;)V
 	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/NetworkResponse;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
 	public final fun clearRequests ()Lio/github/oyedsamu/caterktor/testing/FakeTransport;
 	public fun close ()V
 	public final fun enqueue (Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/FakeTransport;
@@ -43,8 +66,35 @@ public final class io/github/oyedsamu/caterktor/testing/FakeTransport : io/githu
 	public final fun enqueueFailure (Lio/github/oyedsamu/caterktor/NetworkError;)Lio/github/oyedsamu/caterktor/testing/FakeTransport;
 	public final fun enqueueFailure (Ljava/lang/Throwable;)Lio/github/oyedsamu/caterktor/testing/FakeTransport;
 	public fun execute (Lio/github/oyedsamu/caterktor/NetworkRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun failOnUnmatchedRequests ()Lio/github/oyedsamu/caterktor/testing/FakeTransport;
 	public final fun getDefaultResponse ()Lio/github/oyedsamu/caterktor/NetworkResponse;
 	public final fun getRequests ()Ljava/util/List;
+	public final fun rule (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/FakeTransport;
+	public final fun rule (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/FakeTransport;
+	public final fun ruleFailure (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkError;)Lio/github/oyedsamu/caterktor/testing/FakeTransport;
+	public final fun ruleFailure (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Ljava/lang/Throwable;)Lio/github/oyedsamu/caterktor/testing/FakeTransport;
+	public final fun rules (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/FakeTransport;
+}
+
+public final class io/github/oyedsamu/caterktor/testing/FakeTransportDsl {
+	public final fun delete (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun delete (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun fail (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkError;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun fail (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Ljava/lang/Throwable;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun get (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun get (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun head (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun head (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun options (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun options (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun patch (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun patch (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun post (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun post (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun put (Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun put (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun respond (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lio/github/oyedsamu/caterktor/NetworkResponse;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
+	public final fun respond (Lio/github/oyedsamu/caterktor/HttpMethod;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/testing/FakeTransportDsl;
 }
 
 public final class io/github/oyedsamu/caterktor/testing/FakeTransportKt {

@@ -1,0 +1,9 @@
+public final class io/github/oyedsamu/caterktor/connectivity/ConnectivityInterceptor : io/github/oyedsamu/caterktor/Interceptor {
+	public fun <init> (Lio/github/oyedsamu/caterktor/connectivity/ConnectivityProbe;)V
+	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class io/github/oyedsamu/caterktor/connectivity/ConnectivityProbe {
+	public abstract fun isOnline ()Lkotlinx/coroutines/flow/StateFlow;
+}
+

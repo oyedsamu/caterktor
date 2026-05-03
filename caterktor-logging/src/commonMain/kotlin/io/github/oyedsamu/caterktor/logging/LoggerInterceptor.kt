@@ -152,6 +152,8 @@ public class LoggerInterceptor private constructor(
                 when (body) {
                     is RequestBody.Bytes -> logger("  Body (${body.contentType}): ${redaction.redactBody(body.contentType, body.bytes)}")
                     is RequestBody.Text -> logger("  Body (${body.contentType}): ${redaction.redactTextBody(body.contentType, body.text)}")
+                    is RequestBody.Form -> logger("  Body (${body.contentType}): ${redaction.redactFormBody(body)}")
+                    is RequestBody.Multipart -> logger("  Body (${body.contentType}): ${body.describeMultipartBody()}")
                     is RequestBody.Source -> logger("  Body (${body.contentType}): ${body.describeStreamingBody()}")
                 }
             }
@@ -194,6 +196,9 @@ public class LoggerInterceptor private constructor(
 
 private fun RequestBody.Source.describeStreamingBody(): String =
     "<streaming ${contentLength?.toString() ?: "unknown"} bytes>"
+
+private fun RequestBody.Multipart.describeMultipartBody(): String =
+    "<multipart ${parts.size} parts, ${contentLength?.toString() ?: "unknown"} bytes>"
 
 private fun ResponseBody.Source.describeStreamingBody(): String =
     "<streaming ${contentLength?.toString() ?: "unknown"} bytes>"
