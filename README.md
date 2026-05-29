@@ -4,7 +4,7 @@
 
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.1-brightgreen)](https://central.sonatype.com/search?q=io.github.oyedsamu)
+[![Version](https://img.shields.io/badge/version-0.2.0-brightgreen)](https://central.sonatype.com/search?q=io.github.oyedsamu)
 [![API](https://img.shields.io/badge/API-BCV%20gated-7F52FF)](https://github.com/Kotlin/binary-compatibility-validator)
 
 ---
@@ -46,7 +46,7 @@ One object. Explicit ordering. Typed results. Correct concurrency semantics.
 ```toml
 # gradle/libs.versions.toml
 [versions]
-caterktor = "0.1.1"
+caterktor = "0.2.0"
 
 [libraries]
 caterktor-core              = { module = "io.github.oyedsamu:caterktor-core",              version.ref = "caterktor" }
@@ -57,6 +57,9 @@ caterktor-serialization-json = { module = "io.github.oyedsamu:caterktor-serializ
 caterktor-engine-okhttp     = { module = "io.github.oyedsamu:caterktor-engine-okhttp",    version.ref = "caterktor" }
 caterktor-engine-darwin     = { module = "io.github.oyedsamu:caterktor-engine-darwin",    version.ref = "caterktor" }
 caterktor-engine-cio        = { module = "io.github.oyedsamu:caterktor-engine-cio",       version.ref = "caterktor" }
+caterktor-connectivity      = { module = "io.github.oyedsamu:caterktor-connectivity",     version.ref = "caterktor" }
+caterktor-websocket         = { module = "io.github.oyedsamu:caterktor-websocket",        version.ref = "caterktor" }
+caterktor-sse               = { module = "io.github.oyedsamu:caterktor-sse",              version.ref = "caterktor" }
 caterktor-testing           = { module = "io.github.oyedsamu:caterktor-testing",          version.ref = "caterktor" }
 ```
 
@@ -94,13 +97,14 @@ kotlin {
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.oyedsamu:caterktor-core:0.1.1")
-    implementation("io.github.oyedsamu:caterktor-ktor:0.1.1")
-    implementation("io.github.oyedsamu:caterktor-engine-okhttp:0.1.1")
-    implementation("io.github.oyedsamu:caterktor-auth:0.1.1")
-    implementation("io.github.oyedsamu:caterktor-serialization-json:0.1.1")
-    implementation("io.github.oyedsamu:caterktor-logging:0.1.1")
-    testImplementation("io.github.oyedsamu:caterktor-testing:0.1.1")
+    implementation("io.github.oyedsamu:caterktor-core:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-ktor:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-engine-okhttp:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-auth:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-serialization-json:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-logging:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-connectivity:0.2.0")
+    testImplementation("io.github.oyedsamu:caterktor-testing:0.2.0")
 }
 ```
 
@@ -108,11 +112,13 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.oyedsamu:caterktor-core:0.1.1")
-    implementation("io.github.oyedsamu:caterktor-ktor:0.1.1")
-    implementation("io.github.oyedsamu:caterktor-engine-cio:0.1.1")
-    implementation("io.github.oyedsamu:caterktor-serialization-json:0.1.1")
-    testImplementation("io.github.oyedsamu:caterktor-testing:0.1.1")
+    implementation("io.github.oyedsamu:caterktor-core:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-ktor:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-engine-cio:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-serialization-json:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-websocket:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-sse:0.2.0")
+    testImplementation("io.github.oyedsamu:caterktor-testing:0.2.0")
 }
 ```
 
@@ -494,6 +500,16 @@ class UserApiTest {
 }
 ```
 
+Rules can also match path templates and expose path parameters:
+
+```kotlin
+val fake = FakeTransport {
+    get("/users/{id}") { match ->
+        jsonResponse("""{"id":"${match.pathParameters["id"]}"}""")
+    }
+}
+```
+
 Test helpers at a glance:
 
 ```kotlin
@@ -525,8 +541,72 @@ scope.launch {
 }
 ```
 
+`caterktor-logging` also includes an event-derived logger for the same flow:
+
+```kotlin
+val eventLogger = NetworkEventLogger { line -> println(line) }
+
+scope.launch {
+    client.events.collect(eventLogger::log)
+}
+```
+
 `requestId` is consistent across all events for the same logical call — start, retries, refresh
 waits, and final outcome all share one ID, making log correlation across interceptors exact.
+
+---
+
+## Streaming Downloads
+
+For large responses, use the Ktor-backed block-scoped streaming API. The body source is one-shot
+and must be consumed inside the block; Ktor releases the underlying response resources when the
+block returns.
+
+```kotlin
+val bytesWritten = transport.download(
+    NetworkRequest(HttpMethod.GET, "https://cdn.example.com/archive.zip"),
+) { response ->
+    val source = response.body.source()
+    try {
+        source.transferTo(fileSink)
+    } finally {
+        source.close()
+    }
+}
+```
+
+Typed helpers such as `client.get<T>()` still buffer up to `maxBodyDecodeBytes` before decoding,
+which is the right behavior for JSON/protobuf models. Use `KtorTransport.download(...)` for file
+or blob downloads.
+
+---
+
+## Form and Multipart Bodies
+
+Use `RequestBody.Form` for `application/x-www-form-urlencoded` requests:
+
+```kotlin
+val body = RequestBody.Form(
+    RequestBody.Form.Field("grant_type", "refresh_token"),
+    RequestBody.Form.Field("refresh_token", refreshToken),
+)
+```
+
+Use `RequestBody.Multipart` for form-data uploads:
+
+```kotlin
+val body = RequestBody.Multipart(
+    RequestBody.Multipart.Part.field("title", "avatar"),
+    RequestBody.Multipart.Part.formData(
+        name = "file",
+        filename = "avatar.png",
+        body = RequestBody.Source(
+            sourceFactory = { imageSource() },
+            contentType = "image/png",
+        ),
+    ),
+)
+```
 
 ---
 
@@ -570,24 +650,27 @@ to find and update call sites when surfaces stabilise.
 
 ## What's next
 
-CaterKtor is at `0.1.1`. The foundation is stable and BCV-gated. This patch
-line adds query-parameter ergonomics, a Ktor `3.4.3` baseline, lifecycle
-regression coverage, and complete aggregate Dokka docs. Planned milestones:
+CaterKtor is at `0.2.0`. This feature-minor release expands the transport,
+testing, observability, platform, and realtime surfaces while keeping the core
+pipeline BCV-gated.
 
-### `0.2.0` — streaming, testing, observability
-- Streaming response download — `KtorTransport` will return `ResponseBody.Source` so large payloads are never buffered
+### `0.2.0` — streaming, testing, observability, realtime
+- Block-scoped streaming downloads via `KtorTransport.download(request) { response -> ... }`
 - `RequestBody.Multipart` and `RequestBody.Form` for file upload and form submission
-- Rule-based `FakeNetworkClient` DSL — `on { GET("/users/{id}") } respond { ok(user) }`
-- Fully embedded `CaterktorTestServer` backed by real TCP for HTTP semantics tests
-- Event-first logging — `LoggerInterceptor` subscribes to `NetworkEvent` rather than intercepting the chain directly
+- Rule-based fake transport DSL with path-template matching such as `/users/{id}`
+- JVM-only `CaterktorHttpServer` for real TCP integration tests
+- Event-derived logging via `NetworkEventLogger`
+- Fine-grained Ktor connection error mapping for DNS, refused, unreachable, and TLS handshake signals
+- Android/iOS `ConnectivityProbe` support via `caterktor-connectivity`
 - WebSocket support via `caterktor-websocket`
+- Server-Sent Events support via `caterktor-sse`
+- JS IR targets across the shared KMP modules
 
-### `0.3.0` — adapters, platforms
-- `ConnectivityProbe` — Android `ConnectivityManager` / iOS `NWPathMonitor` integration surfacing `NetworkError.Offline`
+### `0.3.0` — adapters, platform polish
 - OpenTelemetry tracing adapter (`caterktor-otel`) when a stable KMP OTel SDK ships
 - Ktorfit declarative adapter (`caterktor-ktorfit`) when upstream KSP support covers all 9 targets
-- JS (IR) and wasmJs targets
-- SSE (Server-Sent Events) via `caterktor-sse`
+- wasmJs targets once Ktor/Wasm engine behavior is mature enough for release gates
+- Expanded progress events for upload/download byte-level telemetry
 
 ### `1.0.0` — API stability
 - `Interceptor` and `Chain` graduate out of `@ExperimentalCaterktor`
@@ -606,20 +689,21 @@ These are out of scope and will not be added:
 
 These are honest limitations of the current release, not bugs that slipped through:
 
-- **Streaming response download is not yet implemented.** `KtorTransport` reads each HTTP response into
-  memory with `readRawBytes()` before returning. The `ResponseBody.Source` ABI type exists and is
-  source-first, but the transport does not yet produce it. The 10 MiB `maxBodyDecodeBytes` guard
-  applies after the read. For large file downloads, use Ktor directly until `0.2.0`.
+- **Regular `execute()` and typed helpers still buffer responses.** Use
+  `KtorTransport.download(request) { ... }` for large file/blob downloads. Typed decoding remains
+  bounded by `maxBodyDecodeBytes`.
 
-- **`RequestBody.Multipart` and `RequestBody.Form` are not yet implemented.** The sealed
-  `RequestBody` hierarchy has `Bytes`, `Text`, and `Source`. File upload and form encoding
-  arrive in `0.2.0`.
+- **Upload/download progress events are not yet emitted.** `NetworkClient.events` covers request
+  lifecycle events today; byte-level progress event types are deferred.
+
+- **`CaterktorTestServer` is still in-memory by design.** Use JVM-only
+  `CaterktorHttpServer` when tests need a real TCP socket and HTTP framing semantics.
 
 - **`@ExperimentalCaterktor` is required on all public API surfaces.** This opt-in will be
   removed incrementally starting at `0.3.0` as surfaces prove stable under field use.
 
-- **OTel and Ktorfit adapters are not yet released.** Both modules are reserved for future waves
-  pending their upstream dependencies reaching stable KMP maturity.
+- **OTel and Ktorfit adapters are not yet released.** These modules are reserved for
+  future waves pending upstream maturity.
 
 ---
 

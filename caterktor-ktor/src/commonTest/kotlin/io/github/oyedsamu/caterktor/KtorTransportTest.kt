@@ -190,6 +190,135 @@ class KtorTransportTest {
     }
 
     @Test
+    fun form_body_is_sent_with_url_encoded_content_type() = runTest {
+        var seenBody: ByteArray? = null
+        var seenContentType: String? = null
+        val engine = MockEngine { request ->
+            seenBody = request.body.toByteArray()
+            seenContentType = request.body.contentType?.toString()
+                ?: request.headers["Content-Type"]
+            respond(content = byteArrayOf(), status = HttpStatusCode.Created)
+        }
+        val transport = KtorTransport(HttpClient(engine))
+
+        val response = transport.execute(
+            NetworkRequest(
+                method = HttpMethod.POST,
+                url = "https://example.test/form",
+                body = RequestBody.Form(
+                    RequestBody.Form.Field("space name", "a+b & c"),
+                    RequestBody.Form.Field("empty", ""),
+                ),
+            ),
+        )
+
+        assertEquals(HttpStatus.Created, response.status)
+        assertEquals("space+name=a%2Bb+%26+c&empty=", seenBody?.decodeToString())
+        assertTrue(
+            seenContentType.orEmpty().contains("application/x-www-form-urlencoded"),
+            "expected Content-Type to contain application/x-www-form-urlencoded, got: $seenContentType",
+        )
+    }
+
+    @Test
+    fun multipart_body_is_sent_with_boundary_content_type() = runTest {
+        var seenBody: ByteArray? = null
+        var seenContentType: String? = null
+        var seenContentLength: Long? = null
+        val engine = MockEngine { request ->
+            seenBody = request.body.toByteArray()
+            seenContentType = request.body.contentType?.toString()
+                ?: request.headers["Content-Type"]
+            seenContentLength = request.body.contentLength
+            respond(content = byteArrayOf(), status = HttpStatusCode.Created)
+        }
+        val transport = KtorTransport(HttpClient(engine))
+        val body = RequestBody.Multipart(
+            parts = listOf(
+                RequestBody.Multipart.Part.field("title", "hello"),
+                RequestBody.Multipart.Part.formData(
+                    name = "file",
+                    filename = "note.txt",
+                    body = RequestBody.Bytes("abc".encodeToByteArray(), "text/plain"),
+                ),
+            ),
+            boundary = "test-boundary",
+        )
+
+        val response = transport.execute(
+            NetworkRequest(
+                method = HttpMethod.POST,
+                url = "https://example.test/upload",
+                body = body,
+            ),
+        )
+
+        val sentText = seenBody?.decodeToString().orEmpty()
+        assertEquals(HttpStatus.Created, response.status)
+        assertTrue(
+            seenContentType.orEmpty().contains("multipart/form-data"),
+            "expected Content-Type to contain multipart/form-data, got: $seenContentType",
+        )
+        assertTrue(
+            seenContentType.orEmpty().contains("boundary=test-boundary"),
+            "expected Content-Type to contain boundary, got: $seenContentType",
+        )
+        assertTrue(sentText.contains("Content-Disposition: form-data; name=\"title\"", ignoreCase = true), sentText)
+        assertTrue(
+            sentText.contains("Content-Disposition: form-data; name=\"file\"; filename=\"note.txt\"", ignoreCase = true),
+            sentText,
+        )
+        assertTrue(sentText.contains("abc"), sentText)
+        assertEquals(body.contentLength, seenContentLength)
+    }
+
+    @Test
+    fun multipart_body_accepts_one_shot_source_parts() = runTest {
+        var openedSources = 0
+        var seenBody: ByteArray? = null
+        val engine = MockEngine { request ->
+            seenBody = request.body.toByteArray()
+            respond(content = byteArrayOf(), status = HttpStatusCode.Created)
+        }
+        val transport = KtorTransport(HttpClient(engine))
+        val body = RequestBody.Multipart(
+            parts = listOf(
+                RequestBody.Multipart.Part.formData(
+                    name = "file",
+                    filename = "stream.txt",
+                    body = RequestBody.Source(
+                        sourceFactory = {
+                            check(openedSources == 0) { "multipart source part was opened more than once" }
+                            openedSources += 1
+                            Buffer().also { it.write("streamed".encodeToByteArray()) }
+                        },
+                        contentType = "text/plain",
+                        contentLength = "streamed".encodeToByteArray().size.toLong(),
+                    ),
+                ),
+            ),
+            boundary = "test-boundary",
+        )
+
+        val response = transport.execute(
+            NetworkRequest(
+                method = HttpMethod.POST,
+                url = "https://example.test/upload",
+                body = body,
+            ),
+        )
+
+        val sentText = seenBody?.decodeToString().orEmpty()
+        assertEquals(HttpStatus.Created, response.status)
+        assertEquals(1, openedSources)
+        assertTrue(sentText.contains("streamed"), sentText)
+        assertTrue(
+            sentText.contains("Content-Disposition: form-data; name=\"file\"; filename=\"stream.txt\"", ignoreCase = true),
+            sentText,
+        )
+    }
+
+    @Test
     fun io_exception_maps_to_connection_failed() = runTest {
         val engine = MockEngine { _ ->
             throw IOException("network unreachable")

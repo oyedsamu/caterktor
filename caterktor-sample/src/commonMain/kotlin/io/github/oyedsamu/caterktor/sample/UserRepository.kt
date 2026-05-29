@@ -26,5 +26,6 @@ private fun NetworkError.describe(): String =
         is NetworkError.Serialization -> "serialization failed: $phase"
         is NetworkError.Protocol -> "protocol error: $message"
         is NetworkError.CircuitOpen -> "circuit open: $name"
+        is NetworkError.Offline -> "offline"
         is NetworkError.Unknown -> "unknown error: ${cause.message}"
     }

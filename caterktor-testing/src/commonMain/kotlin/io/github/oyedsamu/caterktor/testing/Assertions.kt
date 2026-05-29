@@ -77,6 +77,8 @@ private fun RequestBody.asText(): String =
     when (this) {
         is RequestBody.Bytes -> bytes.decodeToString()
         is RequestBody.Text -> text
+        is RequestBody.Form -> bytes().decodeToString()
+        is RequestBody.Multipart -> bytes().decodeToString()
         is RequestBody.Source -> bytes().decodeToString()
     }
 

@@ -377,6 +377,19 @@ public final class io/github/oyedsamu/caterktor/NetworkError$Http : io/github/oy
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/github/oyedsamu/caterktor/NetworkError$Offline : io/github/oyedsamu/caterktor/NetworkError {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Throwable;)Lio/github/oyedsamu/caterktor/NetworkError$Offline;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkError$Offline;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkError$Offline;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCause ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/github/oyedsamu/caterktor/NetworkError$Protocol : io/github/oyedsamu/caterktor/NetworkError {
 	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -693,6 +706,55 @@ public final class io/github/oyedsamu/caterktor/RequestBody$Bytes : io/github/oy
 
 public final class io/github/oyedsamu/caterktor/RequestBody$DefaultImpls {
 	public static fun bytes (Lio/github/oyedsamu/caterktor/RequestBody;)[B
+}
+
+public final class io/github/oyedsamu/caterktor/RequestBody$Form : io/github/oyedsamu/caterktor/RequestBody {
+	public fun <init> (Ljava/util/List;)V
+	public fun <init> ([Lio/github/oyedsamu/caterktor/RequestBody$Form$Field;)V
+	public fun bytes ()[B
+	public fun getContentLength ()Ljava/lang/Long;
+	public fun getContentType ()Ljava/lang/String;
+	public final fun getFields ()Ljava/util/List;
+	public fun source ()Lkotlinx/io/Source;
+}
+
+public final class io/github/oyedsamu/caterktor/RequestBody$Form$Field {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/github/oyedsamu/caterktor/RequestBody$Form$Field;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/RequestBody$Form$Field;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/RequestBody$Form$Field;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/RequestBody$Multipart : io/github/oyedsamu/caterktor/RequestBody {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> ([Lio/github/oyedsamu/caterktor/RequestBody$Multipart$Part;)V
+	public fun bytes ()[B
+	public final fun getBoundary ()Ljava/lang/String;
+	public fun getContentLength ()Ljava/lang/Long;
+	public fun getContentType ()Ljava/lang/String;
+	public final fun getParts ()Ljava/util/List;
+	public fun source ()Lkotlinx/io/Source;
+}
+
+public final class io/github/oyedsamu/caterktor/RequestBody$Multipart$Part {
+	public static final field Companion Lio/github/oyedsamu/caterktor/RequestBody$Multipart$Part$Companion;
+	public fun <init> (Lio/github/oyedsamu/caterktor/Headers;Lio/github/oyedsamu/caterktor/RequestBody;)V
+	public final fun getBody ()Lio/github/oyedsamu/caterktor/RequestBody;
+	public final fun getHeaders ()Lio/github/oyedsamu/caterktor/Headers;
+}
+
+public final class io/github/oyedsamu/caterktor/RequestBody$Multipart$Part$Companion {
+	public final fun field (Ljava/lang/String;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;)Lio/github/oyedsamu/caterktor/RequestBody$Multipart$Part;
+	public static synthetic fun field$default (Lio/github/oyedsamu/caterktor/RequestBody$Multipart$Part$Companion;Ljava/lang/String;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/RequestBody$Multipart$Part;
+	public final fun formData (Ljava/lang/String;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;)Lio/github/oyedsamu/caterktor/RequestBody$Multipart$Part;
+	public static synthetic fun formData$default (Lio/github/oyedsamu/caterktor/RequestBody$Multipart$Part$Companion;Ljava/lang/String;Lio/github/oyedsamu/caterktor/RequestBody;Ljava/lang/String;Lio/github/oyedsamu/caterktor/Headers;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/RequestBody$Multipart$Part;
 }
 
 public final class io/github/oyedsamu/caterktor/RequestBody$Source : io/github/oyedsamu/caterktor/RequestBody {

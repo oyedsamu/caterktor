@@ -9,6 +9,7 @@ import io.github.oyedsamu.caterktor.HttpMethod
 import io.github.oyedsamu.caterktor.HttpStatus
 import io.github.oyedsamu.caterktor.NetworkRequest
 import io.github.oyedsamu.caterktor.NetworkResponse
+import io.github.oyedsamu.caterktor.NetworkEvent
 import io.github.oyedsamu.caterktor.RequestBody
 import io.github.oyedsamu.caterktor.Transport
 import kotlinx.coroutines.CancellationException
@@ -244,6 +245,65 @@ class LoggerInterceptorTest {
         assertEquals(HttpStatus.OK, response.status)
         assertTrue(lines.any { it.contains("<body 9 bytes exceeds max 4 bytes>") })
         assertFalse(lines.any { it.contains("too-large") })
+    }
+
+    @Test
+    fun formBodyRedactsConfiguredFieldNames() = runTest {
+        val lines = mutableListOf<String>()
+        val client = CaterKtor {
+            transport = Transport { response(HttpStatus.OK) }
+            addInterceptor(LoggerInterceptor(level = LogLevel.Body, logger = lines::add))
+        }
+
+        client.execute(
+            NetworkRequest(
+                method = HttpMethod.POST,
+                url = "https://example.test/token",
+                body = RequestBody.Form(
+                    RequestBody.Form.Field("grant_type", "refresh_token"),
+                    RequestBody.Form.Field("refresh_token", "super-secret"),
+                    RequestBody.Form.Field("client_id", "my-app"),
+                    RequestBody.Form.Field("client_secret", "very-secret"),
+                ),
+            ),
+        )
+
+        val bodyLine = lines.first { it.contains("Body") }
+        assertTrue(bodyLine.contains("grant_type=refresh_token"), bodyLine)
+        assertTrue(bodyLine.contains("client_id=my-app"), bodyLine)
+        assertFalse(bodyLine.contains("super-secret"), bodyLine)
+        assertFalse(bodyLine.contains("very-secret"), bodyLine)
+        assertTrue(bodyLine.contains("refresh_token=***"), bodyLine)
+        assertTrue(bodyLine.contains("client_secret=***"), bodyLine)
+    }
+
+    @Test
+    fun networkEventLoggerLogsLifecycleEventsFromEvents() {
+        val lines = mutableListOf<String>()
+        val logger = NetworkEventLogger(lines::add)
+
+        logger.log(
+            NetworkEvent.CallStart(
+                requestId = "req-1",
+                request = NetworkRequest(HttpMethod.GET, "https://example.test/items"),
+            ),
+        )
+        logger.log(
+            NetworkEvent.CallSuccess(
+                requestId = "req-1",
+                status = HttpStatus.OK,
+                durationMs = 12,
+                attempts = 2,
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                "event request_start requestId=req-1 method=GET url=https://example.test/items",
+                "event request_success requestId=req-1 status=200 durationMs=12 attempts=2",
+            ),
+            lines,
+        )
     }
 
     private fun response(
