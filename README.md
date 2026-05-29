@@ -1,6 +1,6 @@
 # CaterKtor
 
-**The application networking layer Ktor doesn't ship.**
+**The application networking layer built on Ktor.**
 
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
