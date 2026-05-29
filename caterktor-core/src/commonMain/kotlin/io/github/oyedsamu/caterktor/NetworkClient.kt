@@ -360,32 +360,78 @@ private fun RequestBody.withUploadProgress(
     emit: (NetworkEvent) -> Unit,
 ): RequestBody =
     when (this) {
-        is RequestBody.Source -> RequestBody.Source(
-            sourceFactory = {
-                source().progressing(
-                    totalBytes = contentLength,
-                    onProgress = { bytesSent, totalBytes ->
-                        emit(NetworkEvent.UploadProgress(requestId, bytesSent, totalBytes))
-                    },
-                )
-            },
-            contentType = contentType,
-            contentLength = contentLength,
-        )
-        is RequestBody.Multipart -> RequestBody.Multipart(
-            parts = parts.map { part ->
-                RequestBody.Multipart.Part(
-                    headers = part.headers,
-                    body = part.body.withUploadProgress(requestId, emit),
-                )
-            },
-            boundary = boundary,
-        )
+        is RequestBody.Source -> withSourceUploadProgress(requestId, emit)
+        is RequestBody.Multipart -> withMultipartUploadProgress(requestId, emit)
         is RequestBody.Bytes,
         is RequestBody.Text,
         is RequestBody.Form,
         -> this
     }
+
+@OptIn(ExperimentalCaterktor::class)
+private fun RequestBody.Source.withSourceUploadProgress(
+    requestId: String,
+    emit: (NetworkEvent) -> Unit,
+): RequestBody.Source = RequestBody.Source(
+    sourceFactory = {
+        source().progressing(
+            totalBytes = contentLength,
+            onProgress = { bytesSent, totalBytes ->
+                emit(NetworkEvent.UploadProgress(requestId, bytesSent, totalBytes))
+            },
+        )
+    },
+    contentType = contentType,
+    contentLength = contentLength,
+)
+
+/**
+ * Wraps each source-backed multipart part so progress is reported as a single,
+ * monotonic, request-level stream rather than one counter per part.
+ *
+ * All source parts share one [ByteCounter], so [NetworkEvent.UploadProgress.bytesSent]
+ * accumulates across the whole upload. [NetworkEvent.UploadProgress.totalBytes] is the
+ * sum of the source-part lengths (the only bytes that flow through a progress source),
+ * or `null` if any source part has an unknown length. The shared counter is reset when
+ * the first source part is (re)opened, so retried sends restart progress at zero.
+ */
+@OptIn(ExperimentalCaterktor::class)
+private fun RequestBody.Multipart.withMultipartUploadProgress(
+    requestId: String,
+    emit: (NetworkEvent) -> Unit,
+): RequestBody.Multipart {
+    val firstSourceIndex = parts.indexOfFirst { it.body is RequestBody.Source }
+    if (firstSourceIndex < 0) return this
+
+    val sourceCount = parts.count { it.body is RequestBody.Source }
+    val knownLengths = parts.mapNotNull { (it.body as? RequestBody.Source)?.contentLength }
+    val totalBytes = if (knownLengths.size == sourceCount) knownLengths.sum() else null
+
+    val counter = ByteCounter()
+
+    val wrappedParts = parts.mapIndexed { index, part ->
+        val body = part.body
+        if (body !is RequestBody.Source) return@mapIndexed part
+        RequestBody.Multipart.Part(
+            headers = part.headers,
+            body = RequestBody.Source(
+                sourceFactory = {
+                    if (index == firstSourceIndex) counter.reset()
+                    body.source().progressing(
+                        totalBytes = totalBytes,
+                        counter = counter,
+                        onProgress = { bytesSent, total ->
+                            emit(NetworkEvent.UploadProgress(requestId, bytesSent, total))
+                        },
+                    )
+                },
+                contentType = body.contentType,
+                contentLength = body.contentLength,
+            ),
+        )
+    }
+    return RequestBody.Multipart(parts = wrappedParts, boundary = boundary)
+}
 
 @OptIn(ExperimentalCaterktor::class)
 private fun NetworkResponse.withDownloadProgress(
@@ -412,22 +458,35 @@ private fun NetworkResponse.withDownloadProgress(
 
 private fun Source.progressing(
     totalBytes: Long?,
+    counter: ByteCounter = ByteCounter(),
     onProgress: (bytesTransferred: Long, totalBytes: Long?) -> Unit,
 ): Source =
-    ProgressSource(this, totalBytes, onProgress).buffered()
+    ByteProgressSource(this, counter, totalBytes, onProgress).buffered()
 
-private class ProgressSource(
+/** Mutable cumulative byte counter, optionally shared across multiple sources. */
+private class ByteCounter {
+    private var transferred: Long = 0L
+
+    fun reset() {
+        transferred = 0L
+    }
+
+    fun add(delta: Long): Long {
+        transferred += delta
+        return transferred
+    }
+}
+
+private class ByteProgressSource(
     private val upstream: Source,
+    private val counter: ByteCounter,
     private val totalBytes: Long?,
     private val onProgress: (bytesTransferred: Long, totalBytes: Long?) -> Unit,
 ) : RawSource {
-    private var transferred: Long = 0L
-
     override fun readAtMostTo(sink: Buffer, byteCount: Long): Long {
         val read = upstream.readAtMostTo(sink, byteCount)
         if (read > 0L) {
-            transferred += read
-            onProgress(transferred, totalBytes)
+            onProgress(counter.add(read), totalBytes)
         }
         return read
     }

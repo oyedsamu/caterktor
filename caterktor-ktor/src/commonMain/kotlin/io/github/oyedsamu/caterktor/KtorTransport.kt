@@ -295,9 +295,14 @@ private fun Source.progressing(
     totalBytes: Long?,
     onProgress: (bytesTransferred: Long, totalBytes: Long?) -> Unit,
 ): Source =
-    ProgressSource(this, totalBytes, onProgress).buffered()
+    ChannelProgressSource(this, totalBytes, onProgress).buffered()
 
-private class ProgressSource(
+// NOTE: must NOT be named `ProgressSource`. caterktor-core declares a top-level
+// private `ByteProgressSource` in this same package; a same-named top-level
+// private class here would compile to a colliding `io/github/oyedsamu/caterktor/
+// ProgressSource.class` on any classpath holding both jars, and only one would
+// load. Keep this name distinct from any top-level class in caterktor-core.
+private class ChannelProgressSource(
     private val upstream: Source,
     private val totalBytes: Long?,
     private val onProgress: (bytesTransferred: Long, totalBytes: Long?) -> Unit,
