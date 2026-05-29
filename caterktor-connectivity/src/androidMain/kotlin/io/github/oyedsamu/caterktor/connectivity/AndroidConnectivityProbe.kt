@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkRequest
 import io.github.oyedsamu.caterktor.ExperimentalCaterktor
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +29,8 @@ public class AndroidConnectivityProbe(context: Context) : ConnectivityProbe {
     private val _isOnline = MutableStateFlow(cm.isCurrentlyOnline())
     override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
+    private val registered = AtomicBoolean(false)
+
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             _isOnline.value = true
@@ -37,15 +40,19 @@ public class AndroidConnectivityProbe(context: Context) : ConnectivityProbe {
         }
     }
 
-    /** Start receiving connectivity updates. Idempotent. */
+    /** Start receiving connectivity updates. Idempotent — safe to call multiple times. */
     public fun register(): AndroidConnectivityProbe = apply {
-        val request = NetworkRequest.Builder().build()
-        cm.registerNetworkCallback(request, callback)
+        if (registered.compareAndSet(false, true)) {
+            val request = NetworkRequest.Builder().build()
+            cm.registerNetworkCallback(request, callback)
+        }
     }
 
-    /** Stop receiving connectivity updates. Idempotent. */
+    /** Stop receiving connectivity updates. Idempotent — safe to call multiple times. */
     public fun unregister(): AndroidConnectivityProbe = apply {
-        runCatching { cm.unregisterNetworkCallback(callback) }
+        if (registered.compareAndSet(true, false)) {
+            runCatching { cm.unregisterNetworkCallback(callback) }
+        }
     }
 
     private fun ConnectivityManager.isCurrentlyOnline(): Boolean =

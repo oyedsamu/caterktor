@@ -177,7 +177,7 @@ public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableIntercepto
 
         return when (val outcome = refresh.awaitRespecting(chain.deadline)) {
             is RefreshOutcome.Success -> outcome.token
-            is RefreshOutcome.Cancelled -> throw outcome.cause
+            is RefreshOutcome.Cancelled -> failRefresh(response, AuthRefreshFailedException(outcome.cause))
             is RefreshOutcome.Failure -> failRefresh(response, AuthRefreshFailedException(outcome.cause))
         }
     }

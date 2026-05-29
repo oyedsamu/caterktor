@@ -36,7 +36,7 @@ public class CircuitBreaker(
 ) : Interceptor {
 
     private val mutex = Mutex()
-    private var state: CircuitBreakerState = CircuitBreakerState.Closed
+    @Volatile private var state: CircuitBreakerState = CircuitBreakerState.Closed
     private var consecutiveFailures: Int = 0
     private var openedAtMs: Long = 0L
     private var halfOpenInFlight: Int = 0

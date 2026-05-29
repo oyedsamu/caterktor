@@ -35,7 +35,7 @@ internal suspend fun <T> mapKtorErrors(block: suspend () -> T): T {
         throw NetworkErrorException(
             NetworkError.ConnectionFailed(e.connectionFailureKind(), cause = e),
         )
-    } catch (e: Throwable) {
+    } catch (e: Exception) {
         if (e is CancellationException) throw e
         throw NetworkErrorException(NetworkError.Unknown(cause = e))
     }

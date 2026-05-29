@@ -12,6 +12,7 @@ import io.github.oyedsamu.caterktor.KtorTransport
 import io.github.oyedsamu.caterktor.NetworkClient
 import io.github.oyedsamu.caterktor.NetworkRequest
 import io.github.oyedsamu.caterktor.NetworkResponse
+import io.github.oyedsamu.caterktor.RequestBody
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO as ClientCIO
 import io.ktor.http.HttpStatusCode
@@ -20,6 +21,7 @@ import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.request.httpMethod
+import io.ktor.server.request.receiveBytes
 import io.ktor.server.request.uri
 import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.route
@@ -142,7 +144,7 @@ public class CaterktorHttpServer : AutoCloseable {
     }
 }
 
-private fun ApplicationCall.toNetworkRequest(): NetworkRequest {
+private suspend fun ApplicationCall.toNetworkRequest(): NetworkRequest {
     val method = when (request.httpMethod) {
         io.ktor.http.HttpMethod.Get -> HttpMethod.GET
         io.ktor.http.HttpMethod.Head -> HttpMethod.HEAD
@@ -160,5 +162,11 @@ private fun ApplicationCall.toNetworkRequest(): NetworkRequest {
             }
         }
     }
-    return NetworkRequest(method = method, url = request.uri, headers = headers)
+    val bodyBytes = receiveBytes()
+    val body = if (bodyBytes.isNotEmpty()) {
+        RequestBody.Bytes(bodyBytes, contentType = headers["Content-Type"])
+    } else {
+        null
+    }
+    return NetworkRequest(method = method, url = request.uri, headers = headers, body = body)
 }

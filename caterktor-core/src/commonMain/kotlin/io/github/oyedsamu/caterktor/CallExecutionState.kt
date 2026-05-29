@@ -14,7 +14,7 @@ import kotlin.coroutines.CoroutineContext
 internal class CallExecutionState : AbstractCoroutineContextElement(Key) {
     internal companion object Key : CoroutineContext.Key<CallExecutionState>
 
-    private var maxAttempt: Int = 1
+    @Volatile private var maxAttempt: Int = 1
 
     internal val attempts: Int
         get() = maxAttempt
