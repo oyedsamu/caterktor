@@ -28,9 +28,9 @@ public class FakeTransport(
     private val mutex = Mutex()
     private val scriptedResults: ArrayDeque<ScriptedResult> = ArrayDeque()
     private val rules: MutableList<FakeRule> = mutableListOf()
-    private val recordedRequests: MutableList<NetworkRequest> = mutableListOf()
-    private var failOnUnmatchedRules: Boolean = false
-    private var closed: Boolean = false
+    @Volatile private var recordedRequests: List<NetworkRequest> = emptyList()
+    @Volatile private var failOnUnmatchedRules: Boolean = false
+    @Volatile private var closed: Boolean = false
 
     public constructor(configure: FakeTransportDsl.() -> Unit) : this() {
         rules(configure)
@@ -38,7 +38,7 @@ public class FakeTransport(
     }
 
     public val requests: List<NetworkRequest>
-        get() = recordedRequests.toList()
+        get() = recordedRequests
 
     public fun rules(configure: FakeTransportDsl.() -> Unit): FakeTransport =
         rules(configure = configure, failOnUnmatchedRequests = true)
@@ -126,7 +126,7 @@ public class FakeTransport(
     }
 
     public fun clearRequests(): FakeTransport = apply {
-        recordedRequests.clear()
+        recordedRequests = emptyList()
     }
 
     override suspend fun execute(request: NetworkRequest): NetworkResponse {
@@ -134,7 +134,7 @@ public class FakeTransport(
             throw IllegalStateException("FakeTransport is closed")
         }
         val (scripted, pathParams) = mutex.withLock {
-            recordedRequests.add(request)
+            recordedRequests = recordedRequests + request
             rules.firstNotNullOfOrNull { it.match(request) }
                 ?: if (scriptedResults.isEmpty()) {
                     if (failOnUnmatchedRules) {

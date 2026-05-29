@@ -5,9 +5,11 @@ import io.github.oyedsamu.caterktor.Headers
 import io.github.oyedsamu.caterktor.KtorTransport
 import io.ktor.client.plugins.sse.SSE
 import io.ktor.client.plugins.sse.sse
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 
 /**
  * Opens an SSE (Server-Sent Events) connection using this transport's underlying
@@ -31,28 +33,37 @@ public fun KtorTransport.sse(
     headers: Headers = Headers.Empty,
 ): Flow<SseEvent> = callbackFlow {
     val sseClient = httpClient.config { install(SSE) }
-    sseClient.sse(
-        urlString = url,
-        request = {
-            for (name in headers.names) {
-                for (value in headers.getAll(name)) {
-                    this.headers.append(name, value)
+    val job = launch {
+        try {
+            sseClient.sse(
+                urlString = url,
+                request = {
+                    for (name in headers.names) {
+                        for (value in headers.getAll(name)) {
+                            this.headers.append(name, value)
+                        }
+                    }
+                },
+            ) {
+                incoming.collect { event ->
+                    send(
+                        SseEvent(
+                            data = event.data ?: "",
+                            event = event.event,
+                            id = event.id,
+                            retry = event.retry,
+                            comments = event.comments,
+                        )
+                    )
                 }
             }
-        },
-    ) {
-        incoming.collect { event ->
-            send(
-                SseEvent(
-                    data = event.data ?: "",
-                    event = event.event,
-                    id = event.id,
-                    retry = event.retry,
-                    comments = event.comments,
-                )
-            )
+            close()
+        } catch (e: Exception) {
+            cancel(kotlinx.coroutines.CancellationException("SSE connection failed", e))
         }
     }
-    close()
-    awaitClose()
+    awaitClose {
+        job.cancel()
+        sseClient.close()
+    }
 }

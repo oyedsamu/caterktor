@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
  * Implement this interface to feed the [ConnectivityInterceptor] with
  * real-time connectivity state. Platform-provided implementations:
  * - Android: [AndroidConnectivityProbe] (requires a `Context`)
- * - iOS: [IosConnectivityProbe] (uses `NWPathMonitor`)
+ * - iOS: [IosConnectivityProbe] (uses `SCNetworkReachabilityRef`)
  *
  * JVM and Linux callers may supply their own implementation or use an
  * always-online stub.
