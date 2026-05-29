@@ -27,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
@@ -177,7 +178,19 @@ public class AuthRefreshInterceptor : PrivilegedInterceptor, CloseableIntercepto
 
         return when (val outcome = refresh.awaitRespecting(chain.deadline)) {
             is RefreshOutcome.Success -> outcome.token
-            is RefreshOutcome.Cancelled -> failRefresh(response, AuthRefreshFailedException(outcome.cause))
+            is RefreshOutcome.Cancelled -> {
+                // If the refreshScope itself was cancelled (e.g. via close()), the
+                // CancellationException is foreign to the caller's coroutine — re-throwing
+                // it directly would corrupt the caller's structured concurrency. Wrap it so
+                // callers see a NetworkError rather than an unexpected cancellation signal.
+                // If the scope is still active, the CancellationException came from the
+                // refreshToken callback itself and should propagate unchanged.
+                if (!refreshScope.isActive) {
+                    failRefresh(response, AuthRefreshFailedException(outcome.cause))
+                } else {
+                    throw outcome.cause
+                }
+            }
             is RefreshOutcome.Failure -> failRefresh(response, AuthRefreshFailedException(outcome.cause))
         }
     }

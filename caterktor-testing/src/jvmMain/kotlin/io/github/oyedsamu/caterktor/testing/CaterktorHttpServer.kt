@@ -21,7 +21,7 @@ import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.request.httpMethod
-import io.ktor.server.request.receiveBytes
+import io.ktor.server.request.receive
 import io.ktor.server.request.uri
 import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.route
@@ -162,9 +162,9 @@ private suspend fun ApplicationCall.toNetworkRequest(): NetworkRequest {
             }
         }
     }
-    val bodyBytes = receiveBytes()
+    val bodyBytes = receive<ByteArray>()
     val body = if (bodyBytes.isNotEmpty()) {
-        RequestBody.Bytes(bodyBytes, contentType = headers["Content-Type"])
+        RequestBody.Bytes(bodyBytes, contentType = headers["Content-Type"].orEmpty())
     } else {
         null
     }
