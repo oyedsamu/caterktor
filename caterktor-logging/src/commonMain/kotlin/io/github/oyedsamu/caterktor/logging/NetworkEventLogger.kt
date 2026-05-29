@@ -8,6 +8,21 @@ import io.github.oyedsamu.caterktor.NetworkEvent
  *
  * This logger is intentionally not an interceptor. Collect events from a client
  * and pass them to [log] to keep observability independent from pipeline order.
+ *
+ * Example:
+ * ```
+ * val eventLogger = NetworkEventLogger { line -> println(line) }
+ *
+ * scope.launch {
+ *     client.events.collect(eventLogger::log)
+ * }
+ * ```
+ *
+ * Progress events are formatted as single-line records, for example:
+ * ```
+ * event upload_progress requestId=abc bytesSent=4096 totalBytes=8192
+ * event download_progress requestId=abc bytesRead=4096 totalBytes=unknown
+ * ```
  */
 @ExperimentalCaterktor
 public class NetworkEventLogger(
@@ -32,6 +47,12 @@ private fun NetworkEvent.format(): String =
 
         is NetworkEvent.CallFailure ->
             "event request_failure requestId=$requestId error=${error::class.simpleName ?: "NetworkError"} durationMs=$durationMs attempts=$attempts"
+
+        is NetworkEvent.UploadProgress ->
+            "event upload_progress requestId=$requestId bytesSent=$bytesSent totalBytes=${totalBytes ?: "unknown"}"
+
+        is NetworkEvent.DownloadProgress ->
+            "event download_progress requestId=$requestId bytesRead=$bytesRead totalBytes=${totalBytes ?: "unknown"}"
 
         is NetworkEvent.CircuitBreakerTransition ->
             "event circuit_breaker_transition requestId=$requestId name=$name from=$from to=$to"

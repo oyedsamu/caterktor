@@ -518,6 +518,21 @@ public final class io/github/oyedsamu/caterktor/NetworkEvent$CircuitBreakerTrans
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/github/oyedsamu/caterktor/NetworkEvent$DownloadProgress : io/github/oyedsamu/caterktor/NetworkEvent {
+	public fun <init> (Ljava/lang/String;JLjava/lang/Long;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/String;JLjava/lang/Long;)Lio/github/oyedsamu/caterktor/NetworkEvent$DownloadProgress;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkEvent$DownloadProgress;Ljava/lang/String;JLjava/lang/Long;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkEvent$DownloadProgress;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBytesRead ()J
+	public fun getRequestId ()Ljava/lang/String;
+	public final fun getTotalBytes ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/github/oyedsamu/caterktor/NetworkEvent$ResponseReceived : io/github/oyedsamu/caterktor/NetworkEvent {
 	public synthetic fun <init> (Ljava/lang/String;ILio/github/oyedsamu/caterktor/Headers;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -533,6 +548,21 @@ public final class io/github/oyedsamu/caterktor/NetworkEvent$ResponseReceived : 
 	public final fun getHeaders ()Lio/github/oyedsamu/caterktor/Headers;
 	public fun getRequestId ()Ljava/lang/String;
 	public final fun getStatus-ob9oPJY ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/oyedsamu/caterktor/NetworkEvent$UploadProgress : io/github/oyedsamu/caterktor/NetworkEvent {
+	public fun <init> (Ljava/lang/String;JLjava/lang/Long;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/String;JLjava/lang/Long;)Lio/github/oyedsamu/caterktor/NetworkEvent$UploadProgress;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkEvent$UploadProgress;Ljava/lang/String;JLjava/lang/Long;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkEvent$UploadProgress;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBytesSent ()J
+	public fun getRequestId ()Ljava/lang/String;
+	public final fun getTotalBytes ()Ljava/lang/Long;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

@@ -28,9 +28,9 @@ public class FakeTransport(
     private val mutex = Mutex()
     private val scriptedResults: ArrayDeque<ScriptedResult> = ArrayDeque()
     private val rules: MutableList<FakeRule> = mutableListOf()
-    @Volatile private var recordedRequests: List<NetworkRequest> = emptyList()
-    @Volatile private var failOnUnmatchedRules: Boolean = false
-    @Volatile private var closed: Boolean = false
+    @kotlin.concurrent.Volatile private var recordedRequests: List<NetworkRequest> = emptyList()
+    @kotlin.concurrent.Volatile private var failOnUnmatchedRules: Boolean = false
+    @kotlin.concurrent.Volatile private var closed: Boolean = false
 
     public constructor(configure: FakeTransportDsl.() -> Unit) : this() {
         rules(configure)

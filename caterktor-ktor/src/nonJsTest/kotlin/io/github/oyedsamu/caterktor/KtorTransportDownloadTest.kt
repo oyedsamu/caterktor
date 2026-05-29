@@ -66,4 +66,31 @@ class KtorTransportDownloadTest {
             }
         }
     }
+
+    @Test
+    fun download_emitsProgressWhenStreamingBodyIsConsumed() = runTest {
+        val payload = ByteArray(32 * 1024) { (it % 127).toByte() }
+        val engine = MockEngine { _ ->
+            respond(
+                content = payload,
+                status = HttpStatusCode.OK,
+                headers = headersOf("Content-Length" to listOf(payload.size.toString())),
+            )
+        }
+        val transport = KtorTransport(HttpClient(engine))
+        val progress = mutableListOf<NetworkEvent.DownloadProgress>()
+
+        transport.download(
+            request = NetworkRequest(method = HttpMethod.GET, url = "https://example.test/download"),
+            requestId = "download-1",
+            onDownloadProgress = progress::add,
+        ) { response ->
+            assertContentEquals(payload, response.body.bytes())
+        }
+
+        val last = progress.last()
+        assertEquals("download-1", last.requestId)
+        assertEquals(payload.size.toLong(), last.bytesRead)
+        assertEquals(payload.size.toLong(), last.totalBytes)
+    }
 }

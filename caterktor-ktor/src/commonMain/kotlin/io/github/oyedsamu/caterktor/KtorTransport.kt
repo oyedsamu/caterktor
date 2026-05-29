@@ -15,9 +15,12 @@ import io.ktor.http.content.ChannelWriterContent
 import io.ktor.http.content.OutgoingContent
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
-import io.ktor.utils.io.cancel
 import io.ktor.utils.io.writeSource
 import kotlinx.io.Buffer
+import kotlinx.io.RawSource
+import kotlinx.io.Source
+import kotlinx.io.buffered
+import kotlin.random.Random
 import io.ktor.http.HttpMethod as KtorHttpMethod
 
 /**
@@ -43,12 +46,28 @@ import io.ktor.http.HttpMethod as KtorHttpMethod
  * are sent through Ktor's write-channel content path so large request payloads
  * can stream without first materializing a byte array in CaterKtor.
  *
- * Regular [execute] responses are exposed as replayable [ResponseBody.Bytes]
- * for typed decode compatibility. Use [download] for block-scoped one-shot
- * [ResponseBody.Source] streaming so large response bodies are not materialized
- * by CaterKtor.
- *
- * @property httpClient The caller-supplied Ktor client. The exact instance
+     * Regular [execute] responses are exposed as replayable [ResponseBody.Bytes]
+     * for typed decode compatibility. Use [download] for block-scoped one-shot
+     * [ResponseBody.Source] streaming so large response bodies are not materialized
+     * by CaterKtor.
+     *
+     * Example:
+     * ```
+     * val transport = KtorTransport(HttpClient(CIO))
+     *
+     * transport.download(
+     *     request = NetworkRequest(HttpMethod.GET, "https://cdn.example.com/archive.zip"),
+     *     onDownloadProgress = { progress ->
+     *         println("downloaded ${progress.bytesRead} of ${progress.totalBytes ?: "unknown"}")
+     *     },
+     * ) { response ->
+     *     response.body.source().use { source ->
+     *         source.transferTo(fileSink)
+     *     }
+     * }
+     * ```
+     *
+     * @property httpClient The caller-supplied Ktor client. The exact instance
  *   passed in is retained so that callers can reference it for diagnostics;
  *   the transport internally uses a copy re-configured with
  *   `expectSuccess = false`.
@@ -100,6 +119,24 @@ public class KtorTransport(
      * returns or throws, Ktor releases the underlying response resources and the
      * source is no longer valid.
      *
+     * When [onDownloadProgress] is supplied, it receives cumulative bytes read
+     * from the streaming source. [NetworkEvent.DownloadProgress.totalBytes] is
+     * `null` when the response does not expose a valid `Content-Length`.
+     *
+     * Example:
+     * ```
+     * transport.download(
+     *     request = NetworkRequest(HttpMethod.GET, "https://cdn.example.com/video.mp4"),
+     *     requestId = "video-download",
+     *     onDownloadProgress = { progress ->
+     *         val total = progress.totalBytes?.toString() ?: "unknown"
+     *         println("${progress.requestId}: ${progress.bytesRead}/$total")
+     *     },
+     * ) { response ->
+     *     response.body.source().use { it.transferTo(fileSink) }
+     * }
+     * ```
+     *
      * **Threading note:** the underlying [ResponseBody.Source] bridges Ktor's
      * async [ByteReadChannel] to the synchronous [kotlinx.io.Source] API via
      * `runBlocking`. Do not invoke [ResponseBody.Source.source] from a
@@ -109,6 +146,8 @@ public class KtorTransport(
      */
     public suspend fun <T> download(
         request: NetworkRequest,
+        requestId: String = generateTransportRequestId(),
+        onDownloadProgress: (NetworkEvent.DownloadProgress) -> Unit = {},
         block: suspend (NetworkResponse) -> T,
     ): T = mapKtorErrors {
         client.prepareRequest { applyNetworkRequest(request) }.execute { ktorResponse ->
@@ -121,14 +160,17 @@ public class KtorTransport(
             }
             val channel = ktorResponse.bodyAsChannel()
             var sourceOpened = false
+            val contentLength = responseHeaders[HttpHeaders.ContentLength]?.toLongOrNull()
             val body = ResponseBody.Source(
                 sourceFactory = {
                     check(!sourceOpened) { "Streaming response body can only be opened once." }
                     sourceOpened = true
-                    createRawSource(channel)
+                    createRawSource(channel).progressing(contentLength) { bytesRead, totalBytes ->
+                        onDownloadProgress(NetworkEvent.DownloadProgress(requestId, bytesRead, totalBytes))
+                    }
                 },
                 contentType = responseHeaders[HttpHeaders.ContentType],
-                contentLength = responseHeaders[HttpHeaders.ContentLength]?.toLongOrNull(),
+                contentLength = contentLength,
             )
             block(
                 NetworkResponse(
@@ -139,6 +181,20 @@ public class KtorTransport(
             )
         }
     }
+
+    /**
+     * Binary-compatible overload for callers compiled against the original
+     * streaming download API.
+     */
+    public suspend fun <T> download(
+        request: NetworkRequest,
+        block: suspend (NetworkResponse) -> T,
+    ): T = download(
+        request = request,
+        requestId = generateTransportRequestId(),
+        onDownloadProgress = {},
+        block = block,
+    )
 
     override fun close() {
         if (closed) return
@@ -234,6 +290,42 @@ private const val CRLF: String = "\r\n"
 
 private fun parseContentType(value: String?): ContentType? =
     value?.let(ContentType::parse)
+
+private fun Source.progressing(
+    totalBytes: Long?,
+    onProgress: (bytesTransferred: Long, totalBytes: Long?) -> Unit,
+): Source =
+    ChannelProgressSource(this, totalBytes, onProgress).buffered()
+
+// NOTE: must NOT be named `ProgressSource`. caterktor-core declares a top-level
+// private `ByteProgressSource` in this same package; a same-named top-level
+// private class here would compile to a colliding `io/github/oyedsamu/caterktor/
+// ProgressSource.class` on any classpath holding both jars, and only one would
+// load. Keep this name distinct from any top-level class in caterktor-core.
+private class ChannelProgressSource(
+    private val upstream: Source,
+    private val totalBytes: Long?,
+    private val onProgress: (bytesTransferred: Long, totalBytes: Long?) -> Unit,
+) : RawSource {
+    private var transferred: Long = 0L
+
+    override fun readAtMostTo(sink: Buffer, byteCount: Long): Long {
+        val read = upstream.readAtMostTo(sink, byteCount)
+        if (read > 0L) {
+            transferred += read
+            onProgress(transferred, totalBytes)
+        }
+        return read
+    }
+
+    override fun close() {
+        upstream.close()
+    }
+}
+
+private fun generateTransportRequestId(): String = buildString(32) {
+    repeat(2) { append(Random.nextLong().toULong().toString(16).padStart(16, '0')) }
+}
 
 /**
  * Create a [kotlinx.io.Source] that reads from [channel].

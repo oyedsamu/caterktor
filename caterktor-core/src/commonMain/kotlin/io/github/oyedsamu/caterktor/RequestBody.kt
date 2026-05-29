@@ -89,6 +89,14 @@ public sealed interface RequestBody {
      * Field order and repeated names are preserved. Names and values are encoded
      * with UTF-8 form encoding, where spaces become `+` and reserved bytes are
      * percent-escaped.
+     *
+     * Example:
+     * ```
+     * val body = RequestBody.Form(
+     *     RequestBody.Form.Field("grant_type", "refresh_token"),
+     *     RequestBody.Form.Field("refresh_token", refreshToken),
+     * )
+     * ```
      */
     public class Form(
         fields: List<Field>,
@@ -125,6 +133,25 @@ public sealed interface RequestBody {
      * for transports that can stream multipart data directly, while also
      * providing [source] and [bytes] compatibility for existing byte/source
      * paths.
+     *
+     * Example:
+     * ```
+     * val body = RequestBody.Multipart(
+     *     RequestBody.Multipart.Part.field("title", "avatar"),
+     *     RequestBody.Multipart.Part.formData(
+     *         name = "file",
+     *         filename = "avatar.png",
+     *         body = RequestBody.Source(
+     *             sourceFactory = { imageSource() },
+     *             contentType = "image/png",
+     *             contentLength = imageSize,
+     *         ),
+     *     ),
+     * )
+     * ```
+     *
+     * Source-backed parts can emit [NetworkEvent.UploadProgress] when the body
+     * is sent through [NetworkClient].
      */
     public class Multipart(
         parts: List<Part>,
@@ -166,6 +193,19 @@ public sealed interface RequestBody {
             public companion object {
                 /**
                  * Build a form-data part around [body].
+                 *
+                 * Example:
+                 * ```
+                 * RequestBody.Multipart.Part.formData(
+                 *     name = "attachment",
+                 *     filename = "report.pdf",
+                 *     body = RequestBody.Source(
+                 *         sourceFactory = { pdfSource() },
+                 *         contentType = "application/pdf",
+                 *         contentLength = pdfSize,
+                 *     ),
+                 * )
+                 * ```
                  */
                 public fun formData(
                     name: String,
@@ -216,6 +256,19 @@ public sealed interface RequestBody {
      * [sourceFactory] should return a fresh source for every call when the body
      * may be retried or logged. A one-shot source is valid, but callers must then
      * avoid retry policies that need to replay the request body.
+     *
+     * Example:
+     * ```
+     * val body = RequestBody.Source(
+     *     sourceFactory = { fileSystem.source(path) },
+     *     contentType = "application/octet-stream",
+     *     contentLength = fileSize,
+     * )
+     * ```
+     *
+     * Supplying [contentLength] lets progress UIs display a determinate total.
+     * Leave it `null` for chunked streams or generated content where the final
+     * length is not known before upload.
      */
     public class Source(
         public val sourceFactory: () -> IoSource,
