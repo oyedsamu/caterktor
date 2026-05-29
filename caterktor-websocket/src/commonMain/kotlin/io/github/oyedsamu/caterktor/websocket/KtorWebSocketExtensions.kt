@@ -43,17 +43,21 @@ public suspend fun <T> KtorTransport.webSocket(
 ): T {
     val wsClient = httpClient.config { install(WebSockets) }
     val requestHeaders = headers
-    val rawSession = wsClient.webSocketSession(urlString = url) {
-        for (name in requestHeaders.names) {
-            for (value in requestHeaders.getAll(name)) {
-                this.headers.append(name, value)
+    return try {
+        val rawSession = wsClient.webSocketSession(urlString = url) {
+            for (name in requestHeaders.names) {
+                for (value in requestHeaders.getAll(name)) {
+                    this.headers.append(name, value)
+                }
             }
         }
-    }
-    return try {
-        block(KtorWebSocketSessionWrapper(rawSession))
+        try {
+            block(KtorWebSocketSessionWrapper(rawSession))
+        } finally {
+            rawSession.close(CloseReason(CloseReason.Codes.NORMAL, ""))
+        }
     } finally {
-        rawSession.close(CloseReason(CloseReason.Codes.NORMAL, ""))
+        wsClient.close()
     }
 }
 

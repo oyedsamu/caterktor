@@ -15,3 +15,11 @@ public data class SampleRun(
     public val authorizationHeaders: List<String?>,
     public val logs: List<String>,
 )
+
+public data class ProgressSampleRun(
+    public val uploadedBytes: Long,
+    public val uploadTotalBytes: Long?,
+    public val downloadedBytes: Long,
+    public val downloadTotalBytes: Long?,
+    public val responseBytes: Int,
+)

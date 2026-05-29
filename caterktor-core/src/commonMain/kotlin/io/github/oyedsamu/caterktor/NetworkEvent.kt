@@ -4,13 +4,33 @@ package io.github.oyedsamu.caterktor
  * An observable event emitted by [NetworkClient] for every request it
  * processes. Collect [NetworkClient.events] to receive them.
  *
- * Events are emitted in order within a single request:
- * [CallStart] → optional interceptor events → [ResponseReceived] →
- * [CallSuccess] or [CallFailure].
+ * Lifecycle events are emitted in order within a single request:
+ * [CallStart] -> optional interceptor events -> [ResponseReceived] ->
+ * [CallSuccess] or [CallFailure]. Byte-level progress events may appear while
+ * a streaming request body is written or a streaming response body is read.
  * If the transport throws before a response is received (timeout, connection
  * failure), only [CallStart] and [CallFailure] are emitted.
  *
  * [requestId] links every event that belongs to the same logical request.
+ *
+ * Example:
+ * ```
+ * scope.launch {
+ *     client.events.collect { event ->
+ *         when (event) {
+ *             is NetworkEvent.CallStart -> metrics.started(event.requestId)
+ *             is NetworkEvent.UploadProgress ->
+ *                 metrics.uploaded(event.requestId, event.bytesSent, event.totalBytes)
+ *             is NetworkEvent.DownloadProgress ->
+ *                 metrics.downloaded(event.requestId, event.bytesRead, event.totalBytes)
+ *             is NetworkEvent.CallSuccess -> metrics.succeeded(event.requestId)
+ *             is NetworkEvent.CallFailure -> metrics.failed(event.requestId, event.error)
+ *             is NetworkEvent.ResponseReceived -> Unit
+ *             is NetworkEvent.CircuitBreakerTransition -> Unit
+ *         }
+ *     }
+ * }
+ * ```
  *
  * ## Cancellation
  * Events are emitted with `tryEmit` — they are non-blocking and do not
@@ -85,6 +105,53 @@ public sealed interface NetworkEvent {
         public val error: NetworkError,
         public val durationMs: Long,
         public val attempts: Int,
+    ) : NetworkEvent
+
+    /**
+     * Bytes were written for a streaming request body.
+     *
+     * Emitted for source-backed uploads, including multipart file parts, when
+     * the body source is consumed by the transport. [totalBytes] is `null` when
+     * the request body length is unknown.
+     *
+     * Example:
+     * ```
+     * is NetworkEvent.UploadProgress -> {
+     *     val percent = event.totalBytes?.let { (event.bytesSent * 100) / it }
+     *     uploadUi.update(event.requestId, event.bytesSent, percent)
+     * }
+     * ```
+     *
+     * @property bytesSent Cumulative bytes written for this body.
+     * @property totalBytes Total bytes expected, when known.
+     */
+    public data class UploadProgress(
+        override val requestId: String,
+        public val bytesSent: Long,
+        public val totalBytes: Long?,
+    ) : NetworkEvent
+
+    /**
+     * Bytes were read from a streaming response body.
+     *
+     * Emitted for [ResponseBody.Source] values as the caller consumes the
+     * source. [totalBytes] is `null` when the response body length is unknown.
+     *
+     * Example:
+     * ```
+     * is NetworkEvent.DownloadProgress -> {
+     *     val percent = event.totalBytes?.let { (event.bytesRead * 100) / it }
+     *     downloadUi.update(event.requestId, event.bytesRead, percent)
+     * }
+     * ```
+     *
+     * @property bytesRead Cumulative bytes read from this response body.
+     * @property totalBytes Total bytes expected, when known.
+     */
+    public data class DownloadProgress(
+        override val requestId: String,
+        public val bytesRead: Long,
+        public val totalBytes: Long?,
     ) : NetworkEvent
 
     /**

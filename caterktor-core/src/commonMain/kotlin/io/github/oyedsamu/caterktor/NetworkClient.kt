@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
+import kotlinx.io.Buffer
+import kotlinx.io.RawSource
+import kotlinx.io.Source
+import kotlinx.io.buffered
 
 /**
  * The CaterKtor client — a constructed, disposable object that walks a request
@@ -79,6 +83,23 @@ public class NetworkClient internal constructor(
      * ## Concurrency
      * Multiple concurrent requests emit to the same flow. [NetworkEvent.requestId]
      * links related events.
+     *
+     * Example:
+     * ```
+     * scope.launch {
+     *     client.events.collect { event ->
+     *         when (event) {
+     *             is NetworkEvent.CallFailure ->
+     *                 logger("request ${event.requestId} failed: ${event.error}")
+     *             is NetworkEvent.UploadProgress ->
+     *                 uploadBar.update(event.bytesSent, event.totalBytes)
+     *             is NetworkEvent.DownloadProgress ->
+     *                 downloadBar.update(event.bytesRead, event.totalBytes)
+     *             else -> Unit
+     *         }
+     *     }
+     * }
+     * ```
      */
     public val events: SharedFlow<NetworkEvent> = _events.asSharedFlow()
 
@@ -106,8 +127,10 @@ public class NetworkClient internal constructor(
     ): NetworkResponse {
         val callState = coroutineContext[CallExecutionState]
         callState?.recordAttempt(1)
+        val eventSink = ::tryEmitEvent
+        val progressRequest = request.withUploadProgress(requestId, eventSink)
         val chain = RealChain(
-            request = request,
+            request = progressRequest,
             attempt = 1,
             deadline = deadline,
             interceptors = interceptors,
@@ -116,9 +139,9 @@ public class NetworkClient internal constructor(
             callState = callState,
             timeoutConfig = timeoutConfig,
             requestId = requestId,
-            eventSink = ::tryEmitEvent,
+            eventSink = eventSink,
         )
-        return chain.proceed(request)
+        return chain.proceed(progressRequest).withDownloadProgress(requestId, eventSink)
     }
 
     /**
@@ -319,6 +342,98 @@ private fun <T : Any> NetworkClient.decodeResponse(
             attempts = attempts,
             requestId = requestId,
         )
+    }
+}
+
+@OptIn(ExperimentalCaterktor::class)
+private fun NetworkRequest.withUploadProgress(
+    requestId: String,
+    emit: (NetworkEvent) -> Unit,
+): NetworkRequest {
+    val body = body ?: return this
+    return copy(body = body.withUploadProgress(requestId, emit))
+}
+
+@OptIn(ExperimentalCaterktor::class)
+private fun RequestBody.withUploadProgress(
+    requestId: String,
+    emit: (NetworkEvent) -> Unit,
+): RequestBody =
+    when (this) {
+        is RequestBody.Source -> RequestBody.Source(
+            sourceFactory = {
+                source().progressing(
+                    totalBytes = contentLength,
+                    onProgress = { bytesSent, totalBytes ->
+                        emit(NetworkEvent.UploadProgress(requestId, bytesSent, totalBytes))
+                    },
+                )
+            },
+            contentType = contentType,
+            contentLength = contentLength,
+        )
+        is RequestBody.Multipart -> RequestBody.Multipart(
+            parts = parts.map { part ->
+                RequestBody.Multipart.Part(
+                    headers = part.headers,
+                    body = part.body.withUploadProgress(requestId, emit),
+                )
+            },
+            boundary = boundary,
+        )
+        is RequestBody.Bytes,
+        is RequestBody.Text,
+        is RequestBody.Form,
+        -> this
+    }
+
+@OptIn(ExperimentalCaterktor::class)
+private fun NetworkResponse.withDownloadProgress(
+    requestId: String,
+    emit: (NetworkEvent) -> Unit,
+): NetworkResponse =
+    when (val responseBody = body) {
+        is ResponseBody.Source -> copy(
+            body = ResponseBody.Source(
+                sourceFactory = {
+                    responseBody.source().progressing(
+                        totalBytes = responseBody.contentLength,
+                        onProgress = { bytesRead, totalBytes ->
+                            emit(NetworkEvent.DownloadProgress(requestId, bytesRead, totalBytes))
+                        },
+                    )
+                },
+                contentType = responseBody.contentType,
+                contentLength = responseBody.contentLength,
+            ),
+        )
+        is ResponseBody.Bytes -> this
+    }
+
+private fun Source.progressing(
+    totalBytes: Long?,
+    onProgress: (bytesTransferred: Long, totalBytes: Long?) -> Unit,
+): Source =
+    ProgressSource(this, totalBytes, onProgress).buffered()
+
+private class ProgressSource(
+    private val upstream: Source,
+    private val totalBytes: Long?,
+    private val onProgress: (bytesTransferred: Long, totalBytes: Long?) -> Unit,
+) : RawSource {
+    private var transferred: Long = 0L
+
+    override fun readAtMostTo(sink: Buffer, byteCount: Long): Long {
+        val read = upstream.readAtMostTo(sink, byteCount)
+        if (read > 0L) {
+            transferred += read
+            onProgress(transferred, totalBytes)
+        }
+        return read
+    }
+
+    override fun close() {
+        upstream.close()
     }
 }
 

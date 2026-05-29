@@ -128,7 +128,8 @@ dependencies {
 
 > A CI-compiled, runnable version of this exact sample lives in
 > [`caterktor-sample/`](caterktor-sample/src/jvmMain/kotlin/io/github/oyedsamu/caterktor/sample/).
-> Run it locally: `./gradlew :caterktor-sample:jvmRun`
+> Run it locally: `./gradlew :caterktor-sample:jvmRun`. The sample also prints
+> source-backed upload and streaming download progress events.
 
 ```kotlin
 @OptIn(ExperimentalCaterktor::class)
@@ -533,12 +534,24 @@ scope.launch {
             is NetworkEvent.CallStart      -> metrics.requestStarted(event.requestId)
             is NetworkEvent.CallSuccess    -> metrics.recordLatency(event.requestId, event.durationMs)
             is NetworkEvent.CallFailure    -> metrics.recordError(event.requestId, event.error)
+            is NetworkEvent.UploadProgress ->
+                metrics.uploaded(event.requestId, event.bytesSent, event.totalBytes)
+            is NetworkEvent.DownloadProgress ->
+                metrics.downloaded(event.requestId, event.bytesRead, event.totalBytes)
+            is NetworkEvent.ResponseReceived -> {}
             is NetworkEvent.CircuitBreakerTransition ->
                 log.warn("Circuit ${event.name}: ${event.from} → ${event.to}")
-            else -> {}
         }
     }
 }
+```
+
+Progress totals are nullable because chunked requests, generated streams, and some server
+responses do not know their final length up front. Treat `null` as indeterminate progress:
+
+```kotlin
+fun percent(done: Long, total: Long?): Int? =
+    total?.takeIf { it > 0L }?.let { ((done * 100) / it).toInt() }
 ```
 
 `caterktor-logging` also includes an event-derived logger for the same flow:
@@ -565,6 +578,12 @@ block returns.
 ```kotlin
 val bytesWritten = transport.download(
     NetworkRequest(HttpMethod.GET, "https://cdn.example.com/archive.zip"),
+    requestId = "archive-download",
+    onDownloadProgress = { progress ->
+        val label = progress.totalBytes?.let { "${progress.bytesRead}/$it" }
+            ?: "${progress.bytesRead} bytes"
+        println("download ${progress.requestId}: $label")
+    },
 ) { response ->
     val source = response.body.source()
     try {
@@ -574,6 +593,11 @@ val bytesWritten = transport.download(
     }
 }
 ```
+
+If you are already using `NetworkClient.events`, a streaming `ResponseBody.Source` returned by a
+custom transport also emits `NetworkEvent.DownloadProgress` as the source is consumed. The
+Ktor-specific callback above exists for the lower-level `KtorTransport.download(...)` escape hatch,
+which runs outside the `NetworkClient.events` flow.
 
 Typed helpers such as `client.get<T>()` still buffer up to `maxBodyDecodeBytes` before decoding,
 which is the right behavior for JSON/protobuf models. Use `KtorTransport.download(...)` for file
@@ -605,6 +629,39 @@ val body = RequestBody.Multipart(
             contentType = "image/png",
         ),
     ),
+)
+```
+
+Source-backed multipart parts stream through `KtorTransport` without first materializing the file
+body. When the request goes through `NetworkClient`, source-backed parts also emit
+`NetworkEvent.UploadProgress`:
+
+```kotlin
+val uploadEvents = scope.launch {
+    client.events.collect { event ->
+        if (event is NetworkEvent.UploadProgress) {
+            println("uploaded ${event.bytesSent} of ${event.totalBytes ?: "unknown"}")
+        }
+    }
+}
+
+client.execute(
+    NetworkRequest(
+        method = HttpMethod.POST,
+        url = "https://api.example.com/profile/avatar",
+        body = body,
+    ),
+)
+```
+
+Use `contentLength` when you know it. That gives progress UIs a determinate total; omit it for
+chunked or generated streams:
+
+```kotlin
+RequestBody.Source(
+    sourceFactory = { fileSystem.source(path) },
+    contentType = "application/octet-stream",
+    contentLength = fileSize,
 )
 ```
 
@@ -650,7 +707,11 @@ to find and update call sites when surfaces stabilise.
 
 ## What's next
 
-CaterKtor is at `0.2.0`. This feature-minor release expands the transport,
+CaterKtor is moving from `0.2.0` into `0.3.0`. The next release is a maturity
+release: progress telemetry lands, while adapter/platform candidates ship only
+when their release gates are proven locally.
+
+`0.2.0` expanded the transport,
 testing, observability, platform, and realtime surfaces while keeping the core
 pipeline BCV-gated.
 
@@ -666,11 +727,13 @@ pipeline BCV-gated.
 - Server-Sent Events support via `caterktor-sse`
 - JS IR targets across the shared KMP modules
 
-### `0.3.0` — adapters, platform polish
-- OpenTelemetry tracing adapter (`caterktor-otel`) when a stable KMP OTel SDK ships
-- Ktorfit declarative adapter (`caterktor-ktorfit`) when upstream KSP support covers all 9 targets
-- wasmJs targets once Ktor/Wasm engine behavior is mature enough for release gates
-- Expanded progress events for upload/download byte-level telemetry
+### `0.3.0` — progress, adapter decisions, platform polish
+- Upload/download byte-level progress events via `NetworkEvent`
+- `KtorTransport.download(...)` progress callback for lower-level streaming downloads
+- OpenTelemetry tracing adapter go/no-go; no placeholder artifact will be published
+- Ktorfit declarative adapter go/no-go; no forked annotation processor will be introduced
+- wasmJs go/no-go based on deterministic local `wasmJsTest` and publication gates
+- `@ExperimentalCaterktor` audit before any selective API graduation
 
 ### `1.0.0` — API stability
 - `Interceptor` and `Chain` graduate out of `@ExperimentalCaterktor`
@@ -693,17 +756,17 @@ These are honest limitations of the current release, not bugs that slipped throu
   `KtorTransport.download(request) { ... }` for large file/blob downloads. Typed decoding remains
   bounded by `maxBodyDecodeBytes`.
 
-- **Upload/download progress events are not yet emitted.** `NetworkClient.events` covers request
-  lifecycle events today; byte-level progress event types are deferred.
+- **Progress events are 0.3.0 scope.** They are additive to lifecycle events and report nullable
+  totals because many streaming bodies do not know their length up front.
 
 - **`CaterktorTestServer` is still in-memory by design.** Use JVM-only
   `CaterktorHttpServer` when tests need a real TCP socket and HTTP framing semantics.
 
-- **`@ExperimentalCaterktor` is required on all public API surfaces.** This opt-in will be
-  removed incrementally starting at `0.3.0` as surfaces prove stable under field use.
+- **`@ExperimentalCaterktor` is required on most public API surfaces.** Graduation is intentionally
+  conservative; APIs stay experimental when adapter/platform work may still reshape them.
 
-- **OTel and Ktorfit adapters are not yet released.** These modules are reserved for
-  future waves pending upstream maturity.
+- **OTel and Ktorfit adapters are not yet released.** These modules remain reserved until local
+  all-target release gates prove they can share CaterKtor's runtime semantics.
 
 ---
 

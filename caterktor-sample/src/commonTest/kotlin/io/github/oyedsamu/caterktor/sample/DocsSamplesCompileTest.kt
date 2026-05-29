@@ -36,4 +36,15 @@ class DocsSamplesCompileTest {
         assertEquals("https://caterktor.test/users/me", request.url)
         assertEquals("application/json", request.headers["Accept"])
     }
+
+    @Test
+    fun progressEventsSnippetCompilesAndRuns(): Unit = runTest {
+        val run = DocsSamples.progressEventsSnippet()
+
+        assertEquals("sample upload".encodeToByteArray().size.toLong(), run.uploadedBytes)
+        assertEquals(run.uploadedBytes, run.uploadTotalBytes)
+        assertEquals("sample download".encodeToByteArray().size.toLong(), run.downloadedBytes)
+        assertEquals(run.downloadedBytes, run.downloadTotalBytes)
+        assertEquals(run.downloadedBytes.toInt(), run.responseBytes)
+    }
 }
