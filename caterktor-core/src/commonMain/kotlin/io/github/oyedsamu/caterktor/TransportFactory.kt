@@ -16,6 +16,13 @@ public enum class TransportCapability {
      * [ProxySpec.Default].
      */
     Proxy,
+
+    /**
+     * The engine can delegate hostname resolution to a [DnsResolver].
+     *
+     * The Darwin engine cannot: `NSURLSession` offers no hook for it.
+     */
+    CustomDns,
 }
 
 /**
@@ -73,4 +80,5 @@ public interface TransportFactory {
 @ExperimentalCaterktor
 internal fun NetworkConfig.requiredCapabilities(): Set<TransportCapability> = buildSet {
     if (proxy != ProxySpec.Default) add(TransportCapability.Proxy)
+    if (dns != null) add(TransportCapability.CustomDns)
 }

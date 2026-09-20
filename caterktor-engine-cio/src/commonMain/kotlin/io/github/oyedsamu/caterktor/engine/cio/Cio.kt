@@ -16,9 +16,15 @@ import io.ktor.client.engine.cio.CIO
  * ```kotlin
  * val client = CaterKtor {
  *     engine(Cio)
- *     network { proxy = ProxySpec.Http("http://proxy.corp:8080") }
+ *     network {
+ *         proxy = ProxySpec.Http("http://proxy.corp:8080")
+ *         dns = DnsResolver { hostname -> dohClient.lookup(hostname) }
+ *     }
  * }
  * ```
+ *
+ * CIO's resolver is itself a suspending `(String) -> List<String>`, so a
+ * [DnsResolver] is passed through without adaptation.
  *
  * For a transport that needs engine options CaterKtor does not surface, use
  * [CioTransport] and assign it to `transport` instead.
@@ -26,11 +32,16 @@ import io.ktor.client.engine.cio.CIO
 @ExperimentalCaterktor
 public data object Cio : TransportFactory {
 
-    override val capabilities: Set<TransportCapability> = setOf(TransportCapability.Proxy)
+    override val capabilities: Set<TransportCapability> =
+        setOf(TransportCapability.Proxy, TransportCapability.CustomDns)
 
     override fun create(context: TransportContext): Transport {
+        val network = context.network
         val client = HttpClient(CIO) {
-            engine { context.network.proxy.toProxyConfig()?.let { proxy = it } }
+            engine {
+                network.proxy.toProxyConfig()?.let { proxy = it }
+                network.dns?.let { resolver -> dnsResolver = { hostname -> resolver.resolve(hostname) } }
+            }
         }
         return KtorTransport(client, ownsHttpClient = true)
     }

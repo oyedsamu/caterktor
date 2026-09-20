@@ -184,6 +184,10 @@ public final class io/github/oyedsamu/caterktor/DefaultHeadersInterceptor : io/g
 	public fun intercept (Lio/github/oyedsamu/caterktor/Chain;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public abstract interface class io/github/oyedsamu/caterktor/DnsResolver {
+	public abstract fun resolve (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class io/github/oyedsamu/caterktor/ErrorBody {
 	public static final field Companion Lio/github/oyedsamu/caterktor/ErrorBody$Companion;
 	public fun <init> (Lio/github/oyedsamu/caterktor/RawBody;Ljava/lang/Object;)V
@@ -332,12 +336,14 @@ public final class io/github/oyedsamu/caterktor/NetworkClientKt {
 public final class io/github/oyedsamu/caterktor/NetworkConfig {
 	public static final field Companion Lio/github/oyedsamu/caterktor/NetworkConfig$Companion;
 	public fun <init> ()V
-	public fun <init> (Lio/github/oyedsamu/caterktor/ProxySpec;)V
-	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/ProxySpec;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lio/github/oyedsamu/caterktor/ProxySpec;Lio/github/oyedsamu/caterktor/DnsResolver;)V
+	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/ProxySpec;Lio/github/oyedsamu/caterktor/DnsResolver;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/github/oyedsamu/caterktor/ProxySpec;
-	public final fun copy (Lio/github/oyedsamu/caterktor/ProxySpec;)Lio/github/oyedsamu/caterktor/NetworkConfig;
-	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkConfig;Lio/github/oyedsamu/caterktor/ProxySpec;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkConfig;
+	public final fun component2 ()Lio/github/oyedsamu/caterktor/DnsResolver;
+	public final fun copy (Lio/github/oyedsamu/caterktor/ProxySpec;Lio/github/oyedsamu/caterktor/DnsResolver;)Lio/github/oyedsamu/caterktor/NetworkConfig;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/NetworkConfig;Lio/github/oyedsamu/caterktor/ProxySpec;Lio/github/oyedsamu/caterktor/DnsResolver;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/NetworkConfig;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDns ()Lio/github/oyedsamu/caterktor/DnsResolver;
 	public final fun getProxy ()Lio/github/oyedsamu/caterktor/ProxySpec;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -346,7 +352,9 @@ public final class io/github/oyedsamu/caterktor/NetworkConfig {
 public final class io/github/oyedsamu/caterktor/NetworkConfig$Builder {
 	public fun <init> ()V
 	public final fun build ()Lio/github/oyedsamu/caterktor/NetworkConfig;
+	public final fun getDns ()Lio/github/oyedsamu/caterktor/DnsResolver;
 	public final fun getProxy ()Lio/github/oyedsamu/caterktor/ProxySpec;
+	public final fun setDns (Lio/github/oyedsamu/caterktor/DnsResolver;)V
 	public final fun setProxy (Lio/github/oyedsamu/caterktor/ProxySpec;)V
 }
 
@@ -1002,6 +1010,7 @@ public abstract interface class io/github/oyedsamu/caterktor/Transport {
 }
 
 public final class io/github/oyedsamu/caterktor/TransportCapability : java/lang/Enum {
+	public static final field CustomDns Lio/github/oyedsamu/caterktor/TransportCapability;
 	public static final field Proxy Lio/github/oyedsamu/caterktor/TransportCapability;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lio/github/oyedsamu/caterktor/TransportCapability;

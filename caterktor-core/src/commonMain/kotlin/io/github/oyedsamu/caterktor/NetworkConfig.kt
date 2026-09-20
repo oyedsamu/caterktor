@@ -27,10 +27,14 @@ package io.github.oyedsamu.caterktor
  *
  * @property proxy The proxy to route requests through. Defaults to
  *   [ProxySpec.Default], which leaves the engine's own behaviour unchanged.
+ * @property dns Replaces the engine's hostname resolution. `null` leaves the
+ *   engine's own resolver in place. Not supported by every engine — see
+ *   [DnsResolver].
  */
 @ExperimentalCaterktor
 public data class NetworkConfig(
     public val proxy: ProxySpec = ProxySpec.Default,
+    public val dns: DnsResolver? = null,
 ) {
 
     /**
@@ -42,8 +46,11 @@ public data class NetworkConfig(
         /** @see NetworkConfig.proxy */
         public var proxy: ProxySpec = ProxySpec.Default
 
+        /** @see NetworkConfig.dns */
+        public var dns: DnsResolver? = null
+
         /** Build an immutable [NetworkConfig] from the current state. */
-        public fun build(): NetworkConfig = NetworkConfig(proxy = proxy)
+        public fun build(): NetworkConfig = NetworkConfig(proxy = proxy, dns = dns)
     }
 
     public companion object {

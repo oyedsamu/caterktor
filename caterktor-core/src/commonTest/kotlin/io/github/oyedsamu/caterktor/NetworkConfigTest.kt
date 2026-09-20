@@ -2,10 +2,12 @@
 
 package io.github.oyedsamu.caterktor
 
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -116,6 +118,76 @@ class NetworkConfigTest {
         }
 
         assertContains(error.message.orEmpty(), "not both")
+    }
+
+    @Test
+    fun dns_defaults_to_null_and_requires_no_capability() {
+        assertNull(NetworkConfig().dns)
+        assertTrue(NetworkConfig().requiredCapabilities().isEmpty())
+    }
+
+    @Test
+    fun a_configured_resolver_requires_the_CustomDns_capability() {
+        val config = NetworkConfig(dns = DnsResolver { listOf("127.0.0.1") })
+        assertEquals(setOf(TransportCapability.CustomDns), config.requiredCapabilities())
+    }
+
+    @Test
+    fun proxy_and_dns_together_require_both_capabilities() {
+        val config = NetworkConfig(
+            proxy = ProxySpec.Socks("localhost", 1080),
+            dns = DnsResolver { listOf("127.0.0.1") },
+        )
+        assertEquals(
+            setOf(TransportCapability.Proxy, TransportCapability.CustomDns),
+            config.requiredCapabilities(),
+        )
+    }
+
+    @Test
+    fun resolver_reaches_the_engine_factory_intact() = runTest {
+        val engine = FakeEngine(setOf(TransportCapability.CustomDns))
+
+        CaterKtor {
+            engine(engine)
+            network { dns = DnsResolver { hostname -> listOf("10.0.0.1", hostname) } }
+        }
+
+        val resolved = engine.lastContext?.network?.dns?.resolve("example.test")
+        assertEquals(listOf("10.0.0.1", "example.test"), resolved)
+    }
+
+    @Test
+    fun an_engine_without_CustomDns_fails_rather_than_using_system_dns() {
+        val proxyOnlyEngine = FakeEngine(setOf(TransportCapability.Proxy))
+
+        val error = assertFailsWith<IllegalStateException> {
+            CaterKtor {
+                engine(proxyOnlyEngine)
+                network { dns = DnsResolver { listOf("127.0.0.1") } }
+            }
+        }
+
+        assertContains(error.message.orEmpty(), "CustomDns")
+        assertNull(proxyOnlyEngine.lastContext, "transport must not be created when a capability is missing")
+    }
+
+    @Test
+    fun a_missing_capability_is_reported_even_when_another_is_supported() {
+        val proxyOnlyEngine = FakeEngine(setOf(TransportCapability.Proxy))
+
+        val error = assertFailsWith<IllegalStateException> {
+            CaterKtor {
+                engine(proxyOnlyEngine)
+                network {
+                    proxy = ProxySpec.Socks("localhost", 1080)
+                    dns = DnsResolver { listOf("127.0.0.1") }
+                }
+            }
+        }
+
+        assertContains(error.message.orEmpty(), "CustomDns")
+        assertFalse(error.message.orEmpty().contains("Proxy"), "supported capability must not be reported missing")
     }
 
     @Test
