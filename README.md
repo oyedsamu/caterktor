@@ -4,24 +4,26 @@
 
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.0-brightgreen)](https://central.sonatype.com/search?q=io.github.oyedsamu)
+[![Version](https://img.shields.io/badge/version-0.4.0-brightgreen)](https://central.sonatype.com/search?q=io.github.oyedsamu)
 [![API](https://img.shields.io/badge/API-BCV%20gated-7F52FF)](https://github.com/Kotlin/binary-compatibility-validator)
 
 ---
 
 ## Why CaterKtor instead of Ktor directly?
 
-Ktor is an excellent HTTP engine. It handles TCP, TLS, HTTP/1.1, HTTP/2 — the transport layer — very well. What it deliberately does not handle is everything *above* the transport:
+Ktor covers the transport layer and a fair amount above it. Current versions ship retry with exponential backoff, jitter and `Retry-After` handling, token refresh serialised behind a mutex in `AuthTokenHolder`, and header sanitising in the `Logging` plugin. If that covers what you need, use Ktor on its own.
 
-- **No typed result model.** Ktor throws exceptions. Your app catches them, pattern-matches on type, and rebuilds domain errors from exception messages. Every team does this differently.
-- **No interceptor pipeline.** Ktor has a plugin system driven by coroutine phases (`sendPipeline`, `receivePipeline`). It works for transport concerns. It breaks for application concerns like auth, because you cannot control ordering across plugins.
-- **No auth refresh that works under concurrency.** Ten parallel requests all get a 401. Ten parallel calls to your refresh endpoint. Your backend rotates the token on the first, the other nine get `invalid_grant`. This is the single most common networking bug in KMP apps, and Ktor leaves it to you.
-- **No retry with correct defaults.** Adding retry in a Ktor plugin means writing the exponential backoff, the jitter, the `Retry-After` parsing, the idempotency guard, and the deadline propagation yourself. Most implementations get at least one of these wrong.
-- **No structured error type.** A `ClientRequestException` tells you something failed. It does not tell you whether it was a DNS failure, a TLS handshake, a 401, a timeout on connect vs. read vs. a logical deadline. Branching on error kind requires exception message parsing.
-- **No redaction.** Ktor's `Logging` plugin logs what it receives. If `Authorization` or `password` is in that payload, it goes to your log sink.
-- **No test doubles.** Testing a repository that calls Ktor requires MockEngine, which is not part of Ktor's stable API, or a real HTTP server.
+CaterKtor sits one layer up, where a call becomes a typed result and where the policy for that call is written down in one place.
 
-CaterKtor solves all of this — on top of Ktor's engines, without replacing them.
+- Failure reaches you as an exception. A `ClientRequestException` says something went wrong; deciding whether it was DNS, a TLS handshake, a 401, or a connect timeout rather than a read timeout means inspecting exception types and messages. CaterKtor returns a `NetworkResult`, and failures are a sealed `NetworkError` you branch on in a `when`.
+- Plugin order in Ktor comes from coroutine pipeline phases, which are set by each plugin rather than by you. CaterKtor runs interceptors in registration order, so the sequence of auth, retry and logging can be read off the builder.
+- Concurrent refreshes are serialised, but nothing limits how many happen over time. `RefreshBudget` caps them to a count per window, one per minute by default, and raises `AuthRefreshBudgetExceededException` once the budget is spent, instead of refreshing on every 401 for as long as the process lives.
+- Ktor has no circuit breaker. CaterKtor's opens after 10 consecutive failures, stays open for 30 seconds, then admits one trial call, which closes it on success and reopens it on failure.
+- `Logging` sanitises the headers you name. `RedactionEngine` also covers query parameters, JSON body fields and regex rules, with defaults for the usual credential names.
+- Retry treats only GET, HEAD, PUT, DELETE and OPTIONS as safe. POST and PATCH are retried only when you opt in and the request carries an `Idempotency-Key`, and a deadline bounds the whole operation across attempts rather than each attempt separately.
+- Testing a repository means reaching for `MockEngine` or a live server. `caterktor-testing` fakes the transport instead, below your code and above the network.
+
+CaterKtor runs on Ktor's engines and keeps them within reach: the `ktor { }` block configures the underlying client directly for anything CaterKtor does not surface.
 
 ```
 Your App
@@ -35,8 +37,6 @@ NetworkClient  (CaterKtor)
 └── Transport              ← KtorTransport → OkHttp / Darwin / CIO
 ```
 
-One object. Explicit ordering. Typed results. Correct concurrency semantics.
-
 ---
 
 ## Installation
@@ -46,7 +46,7 @@ One object. Explicit ordering. Typed results. Correct concurrency semantics.
 ```toml
 # gradle/libs.versions.toml
 [versions]
-caterktor = "0.2.0"
+caterktor = "0.4.0"
 
 [libraries]
 caterktor-core              = { module = "io.github.oyedsamu:caterktor-core",              version.ref = "caterktor" }
@@ -97,14 +97,14 @@ kotlin {
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.oyedsamu:caterktor-core:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-ktor:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-engine-okhttp:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-auth:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-serialization-json:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-logging:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-connectivity:0.2.0")
-    testImplementation("io.github.oyedsamu:caterktor-testing:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-core:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-ktor:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-engine-okhttp:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-auth:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-serialization-json:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-logging:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-connectivity:0.4.0")
+    testImplementation("io.github.oyedsamu:caterktor-testing:0.4.0")
 }
 ```
 
@@ -112,13 +112,13 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.oyedsamu:caterktor-core:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-ktor:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-engine-cio:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-serialization-json:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-websocket:0.2.0")
-    implementation("io.github.oyedsamu:caterktor-sse:0.2.0")
-    testImplementation("io.github.oyedsamu:caterktor-testing:0.2.0")
+    implementation("io.github.oyedsamu:caterktor-core:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-ktor:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-engine-cio:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-serialization-json:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-websocket:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-sse:0.4.0")
+    testImplementation("io.github.oyedsamu:caterktor-testing:0.4.0")
 }
 ```
 
@@ -684,6 +684,43 @@ through `Chain`, so retry delays and auth refresh waits can honor the same logic
 
 ---
 
+## Engine configuration
+
+A proxy or a DNS resolver has to be set while the engine is being built. `HttpClient.config { }`
+reuses the engine it already has, so these cannot be applied to a transport you constructed
+yourself. Pass the engine to `engine(...)` instead of assigning `transport`, and the builder
+constructs it once the `network { }` block has been read.
+
+```kotlin
+@OptIn(ExperimentalCaterktor::class)
+val client = CaterKtor {
+    engine(OkHttp)                                   // or Cio, Darwin
+    network {
+        proxy = ProxySpec.Http("http://proxy.corp:8080")
+        dns = DnsResolver { hostname -> doh.lookup(hostname) }
+    }
+}
+```
+
+`ProxySpec.Http` takes an `http://` URL; use `ProxySpec.Socks(host, port)` for SOCKS. Other
+schemes are rejected at construction because the engines disagree about them: Ktor's JVM builder
+drops the scheme and proxies over plain HTTP, while its native builder rejects anything but
+`http`.
+
+Engines declare what they can honor, and a setting an engine cannot apply fails `build()` rather
+than being dropped:
+
+| | `proxy` | `dns` |
+|---|---|---|
+| `Cio` | yes | yes |
+| `OkHttp` | yes | yes, adapted to `okhttp3.Dns` |
+| `Darwin` | yes | no, `NSURLSession` has no DNS hook |
+
+Assigning `transport` directly still works and remains the right choice for a pre-built
+`HttpClient`. Setting both `engine(...)` and `transport` is an error.
+
+---
+
 ## Conventions
 
 **Always handle both variants.** `NetworkResult` is sealed. The compiler will warn on a non-exhaustive
@@ -707,13 +744,12 @@ to find and update call sites when surfaces stabilise.
 
 ## What's next
 
-CaterKtor is moving from `0.2.0` into `0.3.0`. The next release is a maturity
-release: progress telemetry lands, while adapter/platform candidates ship only
-when their release gates are proven locally.
+CaterKtor is moving from `0.3.0` into `0.4.0`. The next release moves engine
+configuration into the builder, so settings that have to reach a Ktor engine at
+construction time are no longer out of reach once a transport exists.
 
-`0.2.0` expanded the transport,
-testing, observability, platform, and realtime surfaces while keeping the core
-pipeline BCV-gated.
+Every release so far has been additive: `apiCheck` gates each module, and no
+declaration published in `0.2.0` or `0.3.0` has been removed.
 
 ### `0.2.0` — streaming, testing, observability, realtime
 - Block-scoped streaming downloads via `KtorTransport.download(request) { response -> ... }`
@@ -734,6 +770,13 @@ pipeline BCV-gated.
 - Ktorfit declarative adapter go/no-go; no forked annotation processor will be introduced
 - wasmJs go/no-go based on deterministic local `wasmJsTest` and publication gates
 - `@ExperimentalCaterktor` audit before any selective API graduation
+
+### `0.4.0` — engine configuration
+- `TransportFactory` builds the transport at `build()` time, after configuration is collected
+- `network { }` block carrying `ProxySpec` and `DnsResolver`
+- Engines declare `TransportCapability`; a setting an engine cannot honour fails the build
+- `ProxySpec.Http` rejects schemes the engines disagree about
+- Ktor 3.6.0
 
 ### `1.0.0` — API stability
 - `Interceptor` and `Chain` graduate out of `@ExperimentalCaterktor`

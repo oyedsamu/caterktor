@@ -3,7 +3,7 @@
  * so modules can opt into an Android target independently of the rest of the
  * KMP target matrix. Every CaterKtor Android artifact ships with:
  *
- * - `compileSdk = 36`, `minSdk = 23` (PRD v2 §7 floor)
+ * - `compileSdk = 37`, `minSdk = 23` (PRD v2 §7 floor)
  * - a namespace derived from the module name, rooted at
  *   `io.github.oyedsamu.caterktor.<modulePart>` (matches the project group)
  *
@@ -26,7 +26,7 @@ val derivedNamespace: String = "io.github.oyedsamu.caterktor." +
 kotlin {
     androidLibrary {
         namespace = derivedNamespace
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 23
     }
 }
