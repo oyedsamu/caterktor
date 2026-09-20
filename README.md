@@ -4,7 +4,7 @@
 
 [![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/docs/multiplatform.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.3.0-brightgreen)](https://central.sonatype.com/search?q=io.github.oyedsamu)
+[![Version](https://img.shields.io/badge/version-0.4.0-brightgreen)](https://central.sonatype.com/search?q=io.github.oyedsamu)
 [![API](https://img.shields.io/badge/API-BCV%20gated-7F52FF)](https://github.com/Kotlin/binary-compatibility-validator)
 
 ---
@@ -46,7 +46,7 @@ NetworkClient  (CaterKtor)
 ```toml
 # gradle/libs.versions.toml
 [versions]
-caterktor = "0.3.0"
+caterktor = "0.4.0"
 
 [libraries]
 caterktor-core              = { module = "io.github.oyedsamu:caterktor-core",              version.ref = "caterktor" }
@@ -97,14 +97,14 @@ kotlin {
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.github.oyedsamu:caterktor-core:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-ktor:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-engine-okhttp:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-auth:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-serialization-json:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-logging:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-connectivity:0.3.0")
-    testImplementation("io.github.oyedsamu:caterktor-testing:0.3.0")
+    implementation("io.github.oyedsamu:caterktor-core:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-ktor:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-engine-okhttp:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-auth:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-serialization-json:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-logging:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-connectivity:0.4.0")
+    testImplementation("io.github.oyedsamu:caterktor-testing:0.4.0")
 }
 ```
 
@@ -112,13 +112,13 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.oyedsamu:caterktor-core:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-ktor:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-engine-cio:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-serialization-json:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-websocket:0.3.0")
-    implementation("io.github.oyedsamu:caterktor-sse:0.3.0")
-    testImplementation("io.github.oyedsamu:caterktor-testing:0.3.0")
+    implementation("io.github.oyedsamu:caterktor-core:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-ktor:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-engine-cio:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-serialization-json:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-websocket:0.4.0")
+    implementation("io.github.oyedsamu:caterktor-sse:0.4.0")
+    testImplementation("io.github.oyedsamu:caterktor-testing:0.4.0")
 }
 ```
 
@@ -684,6 +684,43 @@ through `Chain`, so retry delays and auth refresh waits can honor the same logic
 
 ---
 
+## Engine configuration
+
+A proxy or a DNS resolver has to be set while the engine is being built. `HttpClient.config { }`
+reuses the engine it already has, so these cannot be applied to a transport you constructed
+yourself. Pass the engine to `engine(...)` instead of assigning `transport`, and the builder
+constructs it once the `network { }` block has been read.
+
+```kotlin
+@OptIn(ExperimentalCaterktor::class)
+val client = CaterKtor {
+    engine(OkHttp)                                   // or Cio, Darwin
+    network {
+        proxy = ProxySpec.Http("http://proxy.corp:8080")
+        dns = DnsResolver { hostname -> doh.lookup(hostname) }
+    }
+}
+```
+
+`ProxySpec.Http` takes an `http://` URL; use `ProxySpec.Socks(host, port)` for SOCKS. Other
+schemes are rejected at construction because the engines disagree about them: Ktor's JVM builder
+drops the scheme and proxies over plain HTTP, while its native builder rejects anything but
+`http`.
+
+Engines declare what they can honor, and a setting an engine cannot apply fails `build()` rather
+than being dropped:
+
+| | `proxy` | `dns` |
+|---|---|---|
+| `Cio` | yes | yes |
+| `OkHttp` | yes | yes, adapted to `okhttp3.Dns` |
+| `Darwin` | yes | no, `NSURLSession` has no DNS hook |
+
+Assigning `transport` directly still works and remains the right choice for a pre-built
+`HttpClient`. Setting both `engine(...)` and `transport` is an error.
+
+---
+
 ## Conventions
 
 **Always handle both variants.** `NetworkResult` is sealed. The compiler will warn on a non-exhaustive
@@ -707,13 +744,12 @@ to find and update call sites when surfaces stabilise.
 
 ## What's next
 
-CaterKtor is moving from `0.2.0` into `0.3.0`. The next release is a maturity
-release: progress telemetry lands, while adapter/platform candidates ship only
-when their release gates are proven locally.
+CaterKtor is moving from `0.3.0` into `0.4.0`. The next release moves engine
+configuration into the builder, so settings that have to reach a Ktor engine at
+construction time are no longer out of reach once a transport exists.
 
-`0.2.0` expanded the transport,
-testing, observability, platform, and realtime surfaces while keeping the core
-pipeline BCV-gated.
+Every release so far has been additive: `apiCheck` gates each module, and no
+declaration published in `0.2.0` or `0.3.0` has been removed.
 
 ### `0.2.0` — streaming, testing, observability, realtime
 - Block-scoped streaming downloads via `KtorTransport.download(request) { response -> ... }`
@@ -734,6 +770,13 @@ pipeline BCV-gated.
 - Ktorfit declarative adapter go/no-go; no forked annotation processor will be introduced
 - wasmJs go/no-go based on deterministic local `wasmJsTest` and publication gates
 - `@ExperimentalCaterktor` audit before any selective API graduation
+
+### `0.4.0` — engine configuration
+- `TransportFactory` builds the transport at `build()` time, after configuration is collected
+- `network { }` block carrying `ProxySpec` and `DnsResolver`
+- Engines declare `TransportCapability`; a setting an engine cannot honour fails the build
+- `ProxySpec.Http` rejects schemes the engines disagree about
+- Ktor 3.6.0
 
 ### `1.0.0` — API stability
 - `Interceptor` and `Chain` graduate out of `@ExperimentalCaterktor`
