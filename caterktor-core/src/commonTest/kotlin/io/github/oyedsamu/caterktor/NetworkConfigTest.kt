@@ -193,6 +193,10 @@ class NetworkConfigTest {
     @Test
     fun proxy_specs_reject_malformed_input() {
         assertFailsWith<IllegalArgumentException> { ProxySpec.Http("  ") }
+        assertFailsWith<IllegalArgumentException> { ProxySpec.Http("https://proxy.corp:8443") }
+        assertFailsWith<IllegalArgumentException> { ProxySpec.Http("socks://proxy.corp:1080") }
+        assertFailsWith<IllegalArgumentException> { ProxySpec.Http("proxy.corp:8080") }
+        ProxySpec.Http("HTTP://proxy.corp:8080")
         assertFailsWith<IllegalArgumentException> { ProxySpec.Socks("", 1080) }
         assertFailsWith<IllegalArgumentException> { ProxySpec.Socks("localhost", 0) }
         assertFailsWith<IllegalArgumentException> { ProxySpec.Socks("localhost", 65536) }

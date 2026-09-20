@@ -31,11 +31,28 @@ public sealed interface ProxySpec {
     /**
      * Route requests through the HTTP proxy at [url].
      *
+     * ## Why only `http://`
+     *
+     * Engines disagree about every other scheme. Ktor's JVM `ProxyBuilder.http`
+     * discards the scheme and treats the host and port as a plain HTTP proxy,
+     * so `https://` there never meant a TLS connection to the proxy; the
+     * native builder rejects anything but `http`, and the Darwin engine raises
+     * an error while building its `NSURLSession`. Accepting only `http://`
+     * makes every engine behave alike and turns a device-only runtime failure
+     * into one raised at construction.
+     *
      * @property url Absolute URL of the proxy, e.g. `http://proxy.corp:8080`.
+     *   Must carry an `http` scheme; use [Socks] for SOCKS proxies.
      */
     public data class Http(public val url: String) : ProxySpec {
         init {
             require(url.isNotBlank()) { "ProxySpec.Http url must not be blank" }
+            require(url.startsWith("http://", ignoreCase = true)) {
+                "ProxySpec.Http url must start with http://, was \"$url\". " +
+                    "Use ProxySpec.Socks for a SOCKS proxy. An https:// proxy URL is not " +
+                    "portable: Ktor's native engines reject it and the JVM engines ignore " +
+                    "the scheme rather than connecting to the proxy over TLS."
+            }
         }
     }
 
