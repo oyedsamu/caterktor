@@ -51,6 +51,8 @@ public class CaterKtorBuilder internal constructor() {
     private val _converters: MutableList<BodyConverter> = mutableListOf()
     private val _defaultHeaderEntries: MutableList<Pair<String, suspend () -> String>> = mutableListOf()
     private var _timeoutConfig: TimeoutConfig? = null
+    private var _networkConfig: NetworkConfig? = null
+    private var _transportFactory: TransportFactory? = null
     private var _contentNegotiation: ContentNegotiationRegistry = ContentNegotiationRegistry.Empty
     private var _defaultUnwrapper: ResponseUnwrapper? = null
     private var _defaultEnveloper: RequestEnveloper? = null
@@ -72,6 +74,40 @@ public class CaterKtorBuilder internal constructor() {
     /** The currently configured [TimeoutConfig], or `null` if none was set. */
     public val timeoutConfig: TimeoutConfig?
         get() = _timeoutConfig
+
+    /**
+     * Configure connection-level settings that must reach the transport engine
+     * at construction time, such as a proxy.
+     *
+     * Requires an engine supplied via [engine]. These settings cannot be
+     * applied to a [transport] that was already constructed by the caller —
+     * see [NetworkConfig] for why — and [build] fails rather than dropping
+     * them silently.
+     */
+    public fun network(block: NetworkConfig.Builder.() -> Unit): CaterKtorBuilder = apply {
+        _networkConfig = NetworkConfig.Builder().apply(block).build()
+    }
+
+    /** The currently configured [NetworkConfig], or `null` if none was set. */
+    public val networkConfig: NetworkConfig?
+        get() = _networkConfig
+
+    /**
+     * Build the terminal transport from [factory] once the rest of the
+     * configuration has been collected.
+     *
+     * Prefer this over assigning [transport] directly whenever [network] is
+     * used: the factory is invoked at [build] time, so connection-level
+     * settings still reach the engine. Setting both [engine] and [transport]
+     * is an error.
+     */
+    public fun engine(factory: TransportFactory): CaterKtorBuilder = apply {
+        _transportFactory = factory
+    }
+
+    /** The currently configured [TransportFactory], or `null` if none was set. */
+    public val transportFactory: TransportFactory?
+        get() = _transportFactory
 
     /**
      * The terminal transport. Must be set before [build] is invoked, either
@@ -245,10 +281,7 @@ public class CaterKtorBuilder internal constructor() {
     }
 
     internal fun build(): NetworkClient {
-        val t = checkNotNull(transport) {
-            "CaterKtor: `transport` must be configured before build. " +
-                "Provide one directly or install a caterktor-engine-* module."
-        }
+        val t = resolveTransport()
         // H1: auto-install DefaultHeadersInterceptor at front if any default headers are configured
         if (_defaultHeaderEntries.isNotEmpty()) {
             _interceptors.add(0, DefaultHeadersInterceptor(_defaultHeaderEntries.toList()))
@@ -267,5 +300,44 @@ public class CaterKtorBuilder internal constructor() {
             defaultEnveloper = _defaultEnveloper,
             maxBodyDecodeBytes = _maxBodyDecodeBytes,
         )
+    }
+
+    /**
+     * Resolve the terminal transport, rejecting configurations where
+     * connection-level settings could not actually reach the engine.
+     */
+    private fun resolveTransport(): Transport {
+        val factory = _transportFactory
+        val preBuilt = transport
+        val network = _networkConfig
+
+        check(factory == null || preBuilt == null) {
+            "CaterKtor: set either `engine(...)` or `transport = ...`, not both. " +
+                "`transport` is already constructed, so the engine configuration " +
+                "collected by this builder could not be applied to it."
+        }
+
+        if (factory == null) {
+            val orphaned = network?.requiredCapabilities().orEmpty()
+            check(orphaned.isEmpty()) {
+                "CaterKtor: `network { }` requires an engine supplied via `engine(...)`. " +
+                    "A transport assigned to `transport` is constructed before the builder " +
+                    "runs, and a Ktor engine cannot be reconfigured afterwards, so these " +
+                    "settings would be silently ignored: ${orphaned.joinToString()}."
+            }
+            return checkNotNull(preBuilt) {
+                "CaterKtor: `transport` must be configured before build. " +
+                    "Provide one directly or install a caterktor-engine-* module."
+            }
+        }
+
+        val resolvedNetwork = network ?: NetworkConfig.Default
+        val missing = resolvedNetwork.requiredCapabilities() - factory.capabilities
+        check(missing.isEmpty()) {
+            "CaterKtor: engine $factory does not support ${missing.joinToString()}. " +
+                "Remove the setting or choose an engine that supports it."
+        }
+
+        return factory.create(TransportContext(network = resolvedNetwork))
     }
 }

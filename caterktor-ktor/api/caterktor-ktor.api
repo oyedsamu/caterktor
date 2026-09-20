@@ -2,6 +2,10 @@ public final class io/github/oyedsamu/caterktor/KtorDslKt {
 	public static final fun ktor (Lio/github/oyedsamu/caterktor/CaterKtorBuilder;Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/CaterKtorBuilder;
 }
 
+public final class io/github/oyedsamu/caterktor/KtorProxyKt {
+	public static final fun toProxyConfig (Lio/github/oyedsamu/caterktor/ProxySpec;)Ljava/net/Proxy;
+}
+
 public final class io/github/oyedsamu/caterktor/KtorTransport : io/github/oyedsamu/caterktor/CloseableTransport {
 	public fun <init> (Lio/ktor/client/HttpClient;Z)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V

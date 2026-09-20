@@ -1,3 +1,12 @@
+public final class io/github/oyedsamu/caterktor/engine/okhttp/OkHttp : io/github/oyedsamu/caterktor/TransportFactory {
+	public static final field INSTANCE Lio/github/oyedsamu/caterktor/engine/okhttp/OkHttp;
+	public fun create (Lio/github/oyedsamu/caterktor/TransportContext;)Lio/github/oyedsamu/caterktor/Transport;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCapabilities ()Ljava/util/Set;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/github/oyedsamu/caterktor/engine/okhttp/OkHttpTransportKt {
 	public static final fun OkHttpTransport (Lkotlin/jvm/functions/Function1;)Lio/github/oyedsamu/caterktor/KtorTransport;
 	public static synthetic fun OkHttpTransport$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/KtorTransport;
