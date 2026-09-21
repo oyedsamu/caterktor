@@ -1020,13 +1020,15 @@ public final class io/github/oyedsamu/caterktor/TransportCapability : java/lang/
 
 public final class io/github/oyedsamu/caterktor/TransportContext {
 	public fun <init> ()V
-	public fun <init> (Lio/github/oyedsamu/caterktor/NetworkConfig;)V
-	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/NetworkConfig;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lio/github/oyedsamu/caterktor/NetworkConfig;Lio/github/oyedsamu/caterktor/TimeoutConfig;)V
+	public synthetic fun <init> (Lio/github/oyedsamu/caterktor/NetworkConfig;Lio/github/oyedsamu/caterktor/TimeoutConfig;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/github/oyedsamu/caterktor/NetworkConfig;
-	public final fun copy (Lio/github/oyedsamu/caterktor/NetworkConfig;)Lio/github/oyedsamu/caterktor/TransportContext;
-	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/TransportContext;Lio/github/oyedsamu/caterktor/NetworkConfig;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/TransportContext;
+	public final fun component2 ()Lio/github/oyedsamu/caterktor/TimeoutConfig;
+	public final fun copy (Lio/github/oyedsamu/caterktor/NetworkConfig;Lio/github/oyedsamu/caterktor/TimeoutConfig;)Lio/github/oyedsamu/caterktor/TransportContext;
+	public static synthetic fun copy$default (Lio/github/oyedsamu/caterktor/TransportContext;Lio/github/oyedsamu/caterktor/NetworkConfig;Lio/github/oyedsamu/caterktor/TimeoutConfig;ILjava/lang/Object;)Lio/github/oyedsamu/caterktor/TransportContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getNetwork ()Lio/github/oyedsamu/caterktor/NetworkConfig;
+	public final fun getTimeout ()Lio/github/oyedsamu/caterktor/TimeoutConfig;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

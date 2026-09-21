@@ -41,6 +41,8 @@ public data object Cio : TransportFactory {
             engine {
                 network.proxy.toProxyConfig()?.let { proxy = it }
                 network.dns?.let { resolver -> dnsResolver = { hostname -> resolver.resolve(hostname) } }
+                context.timeout.connectTimeoutMs?.let { endpoint.connectTimeout = it }
+                context.timeout.socketTimeoutMs?.let { endpoint.socketTimeout = it }
             }
         }
         return KtorTransport(client, ownsHttpClient = true)

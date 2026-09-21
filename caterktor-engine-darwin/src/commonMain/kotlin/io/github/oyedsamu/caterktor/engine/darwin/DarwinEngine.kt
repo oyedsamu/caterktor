@@ -29,9 +29,16 @@ public data object Darwin : TransportFactory {
 
     override val capabilities: Set<TransportCapability> = setOf(TransportCapability.Proxy)
 
+    private const val MILLIS_PER_SECOND: Double = 1000.0
+
     override fun create(context: TransportContext): Transport {
         val client = HttpClient(KtorDarwin) {
-            engine { context.network.proxy.toProxyConfig()?.let { proxy = it } }
+            engine {
+                context.network.proxy.toProxyConfig()?.let { proxy = it }
+                context.timeout.socketTimeoutMs?.let { millis ->
+                    configureSession { timeoutIntervalForRequest = millis / MILLIS_PER_SECOND }
+                }
+            }
         }
         return KtorTransport(client, ownsHttpClient = true)
     }

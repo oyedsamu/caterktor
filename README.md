@@ -678,6 +678,31 @@ val client = CaterKtor {
 }
 ```
 
+`requestTimeoutMs` is enforced by `NetworkClient` around each attempt. `connectTimeoutMs` and
+`socketTimeoutMs` are applied to the engine, which means the transport has to come from
+`engine(...)` — a transport assigned to `transport` is already constructed by the time the
+builder runs:
+
+```kotlin
+val client = CaterKtor {
+    engine(OkHttp)
+    timeout {
+        connectTimeoutMs = 5_000L
+        socketTimeoutMs  = 15_000L
+        requestTimeoutMs = 30_000L
+    }
+}
+```
+
+| Engine | `connectTimeoutMs` | `socketTimeoutMs` |
+|---|---|---|
+| `Cio` | `endpoint.connectTimeout` | `endpoint.socketTimeout` |
+| `OkHttp` | `connectTimeout` | `readTimeout` and `writeTimeout` |
+| `Darwin` | not expressible | `timeoutIntervalForRequest` |
+
+`NSURLSession` has no separate connect timeout, so on Darwin the connect phase is bounded by
+the socket and request timeouts rather than independently.
+
 Per-call deadlines are passed to typed helpers through the `deadline` parameter and propagate
 through `Chain`, so retry delays and auth refresh waits can honor the same logical budget.
 

@@ -13,6 +13,7 @@ import io.ktor.client.engine.okhttp.OkHttp as KtorOkHttp
 import kotlinx.coroutines.runBlocking
 import okhttp3.Dns
 import java.net.InetAddress
+import java.util.concurrent.TimeUnit
 
 /**
  * [TransportFactory] for the OkHttp engine — the recommended engine on
@@ -40,6 +41,15 @@ public data object OkHttp : TransportFactory {
             engine {
                 network.proxy.toProxyConfig()?.let { proxy = it }
                 network.dns?.let { dns = it.asOkHttpDns() }
+                config {
+                    context.timeout.connectTimeoutMs?.let {
+                        connectTimeout(it, TimeUnit.MILLISECONDS)
+                    }
+                    context.timeout.socketTimeoutMs?.let {
+                        readTimeout(it, TimeUnit.MILLISECONDS)
+                        writeTimeout(it, TimeUnit.MILLISECONDS)
+                    }
+                }
             }
         }
         return KtorTransport(client, ownsHttpClient = true)
