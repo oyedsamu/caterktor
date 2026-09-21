@@ -71,6 +71,24 @@ public class Headers private constructor(
      */
     public fun toMap(): Map<String, List<String>> = map.toMap()
 
+    /**
+     * Returns a [Builder] seeded with these headers.
+     *
+     * Interceptors that add or replace a header should start here rather than from an empty
+     * [Builder], which would drop every header already on the request:
+     *
+     * ```kotlin
+     * val tagged = chain.request.copy(
+     *     headers = chain.request.headers.toBuilder().set("X-Trace-Id", id).build(),
+     * )
+     * ```
+     */
+    public fun toBuilder(): Builder {
+        val builder = Builder()
+        map.forEach { (name, values) -> values.forEach { value -> builder.add(name, value) } }
+        return builder
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Headers) return false

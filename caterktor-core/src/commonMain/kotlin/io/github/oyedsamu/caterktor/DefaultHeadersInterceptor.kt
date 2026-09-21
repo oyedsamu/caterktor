@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 /**
@@ -5,7 +7,6 @@ package io.github.oyedsamu.caterktor
  *
  * Use via [CaterKtorBuilder.defaultHeaders].
  */
-@ExperimentalCaterktor
 @CaterKtorDsl
 public class DefaultHeadersBuilder {
     internal val entries: MutableList<Pair<String, suspend () -> String>> = mutableListOf()
@@ -36,7 +37,6 @@ public class DefaultHeadersBuilder {
  *
  * Can also be constructed and registered manually for full pipeline position control.
  */
-@ExperimentalCaterktor
 public class DefaultHeadersInterceptor(
     /** Ordered list of (header-name, value-provider) pairs. */
     public val entries: List<Pair<String, suspend () -> String>>,

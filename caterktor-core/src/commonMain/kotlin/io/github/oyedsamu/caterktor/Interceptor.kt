@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 /**
@@ -37,7 +39,6 @@ package io.github.oyedsamu.caterktor
  * }
  * ```
  */
-@ExperimentalCaterktor
 public interface Interceptor {
     public suspend fun intercept(chain: Chain): NetworkResponse
 }
@@ -62,7 +63,6 @@ public interface Interceptor {
  * the *caller's* chain (e.g. the call count used to enforce the at-most-once
  * rule for normal interceptors) is the only thing shared across re-entries.
  */
-@ExperimentalCaterktor
 public interface PrivilegedInterceptor : Interceptor
 
 /**
@@ -73,7 +73,6 @@ public interface PrivilegedInterceptor : Interceptor
  * any that implement this interface. Implementations must be idempotent — calling [close]
  * more than once must not throw.
  */
-@ExperimentalCaterktor
 public interface CloseableInterceptor : Interceptor {
     public fun close()
 }

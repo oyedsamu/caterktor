@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 /**
@@ -21,7 +23,6 @@ package io.github.oyedsamu.caterktor
  *    engine's own dispatching is authoritative; callers' context is preserved
  *    on resume (see execution plan §1 decision 4).
  */
-@ExperimentalCaterktor
 public fun interface Transport {
     public suspend fun execute(request: NetworkRequest): NetworkResponse
 }
@@ -29,7 +30,6 @@ public fun interface Transport {
 /**
  * A [Transport] that owns resources and can be closed by [NetworkClient.close].
  */
-@ExperimentalCaterktor
 public interface CloseableTransport : Transport {
     public fun close()
 }

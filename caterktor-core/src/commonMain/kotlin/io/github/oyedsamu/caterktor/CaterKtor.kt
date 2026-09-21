@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 /**
@@ -19,7 +21,6 @@ package io.github.oyedsamu.caterktor
  *
  * @throws IllegalStateException if no [Transport] was configured in [block].
  */
-@ExperimentalCaterktor
 public fun CaterKtor(block: CaterKtorBuilder.() -> Unit): NetworkClient {
     return CaterKtorBuilder().apply(block).build()
 }
@@ -29,7 +30,6 @@ public fun CaterKtor(block: CaterKtorBuilder.() -> Unit): NetworkClient {
  * confusion when nested DSLs are composed in later waves (e.g. `auth { }`,
  * `retry { }`, `redaction { }` blocks).
  */
-@ExperimentalCaterktor
 @DslMarker
 public annotation class CaterKtorDsl
 
@@ -43,7 +43,6 @@ public annotation class CaterKtorDsl
  * Ordering: interceptors run in the order they are registered. The first
  * registered interceptor sees the request first and sees the response last.
  */
-@ExperimentalCaterktor
 @CaterKtorDsl
 public class CaterKtorBuilder internal constructor() {
 
@@ -84,11 +83,13 @@ public class CaterKtorBuilder internal constructor() {
      * see [NetworkConfig] for why — and [build] fails rather than dropping
      * them silently.
      */
+    @ExperimentalCaterktor
     public fun network(block: NetworkConfig.Builder.() -> Unit): CaterKtorBuilder = apply {
         _networkConfig = NetworkConfig.Builder().apply(block).build()
     }
 
     /** The currently configured [NetworkConfig], or `null` if none was set. */
+    @ExperimentalCaterktor
     public val networkConfig: NetworkConfig?
         get() = _networkConfig
 
@@ -101,11 +102,13 @@ public class CaterKtorBuilder internal constructor() {
      * settings still reach the engine. Setting both [engine] and [transport]
      * is an error.
      */
+    @ExperimentalCaterktor
     public fun engine(factory: TransportFactory): CaterKtorBuilder = apply {
         _transportFactory = factory
     }
 
     /** The currently configured [TransportFactory], or `null` if none was set. */
+    @ExperimentalCaterktor
     public val transportFactory: TransportFactory?
         get() = _transportFactory
 
@@ -212,10 +215,12 @@ public class CaterKtorBuilder internal constructor() {
     }
 
     /** The default [ResponseUnwrapper], or `null` if none was set. */
+    @ExperimentalCaterktor
     public val defaultUnwrapper: ResponseUnwrapper?
         get() = _defaultUnwrapper
 
     /** The default [RequestEnveloper], or `null` if none was set. */
+    @ExperimentalCaterktor
     public val defaultEnveloper: RequestEnveloper?
         get() = _defaultEnveloper
 
@@ -226,6 +231,7 @@ public class CaterKtorBuilder internal constructor() {
      * is called. A per-request override via [CaterKtorKeys.UNWRAPPER] in [NetworkRequest.attributes]
      * takes precedence over this default.
      */
+    @ExperimentalCaterktor
     public fun unwrapper(unwrapper: ResponseUnwrapper): CaterKtorBuilder = apply {
         _defaultUnwrapper = unwrapper
     }
@@ -237,6 +243,7 @@ public class CaterKtorBuilder internal constructor() {
      * is built. A per-request override via [CaterKtorKeys.ENVELOPER] in [NetworkRequest.attributes]
      * takes precedence over this default.
      */
+    @ExperimentalCaterktor
     public fun enveloper(enveloper: RequestEnveloper): CaterKtorBuilder = apply {
         _defaultEnveloper = enveloper
     }

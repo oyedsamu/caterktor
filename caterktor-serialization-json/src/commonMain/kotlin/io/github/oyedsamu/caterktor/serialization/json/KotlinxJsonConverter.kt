@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor.serialization.json
 
 import io.github.oyedsamu.caterktor.BodyConverter
@@ -32,7 +34,6 @@ import kotlin.reflect.KType
  *
  * @property json The [Json] instance used for all encode/decode operations.
  */
-@ExperimentalCaterktor
 public class KotlinxJsonConverter(
     public val json: Json = DefaultJson,
 ) : BodyConverter {

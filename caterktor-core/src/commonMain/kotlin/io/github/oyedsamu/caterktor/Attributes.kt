@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 /**
@@ -10,7 +12,6 @@ package io.github.oyedsamu.caterktor
  * @param T The type of the value stored under this key.
  * @property name A human-readable name, used in [toString] and diagnostics.
  */
-@ExperimentalCaterktor
 public class AttributeKey<T : Any>(public val name: String) {
     override fun toString(): String = "AttributeKey($name)"
 }
@@ -38,7 +39,6 @@ public class AttributeKey<T : Any>(public val name: String) {
  * val merged = base + Attributes { put(ExtraKey, value) }
  * ```
  */
-@ExperimentalCaterktor
 public class Attributes internal constructor(
     private val map: Map<AttributeKey<*>, Any>,
 ) {
@@ -86,7 +86,6 @@ public class Attributes internal constructor(
 /**
  * Mutable builder for [Attributes].
  */
-@ExperimentalCaterktor
 public class AttributesBuilder internal constructor() {
     private val map: MutableMap<AttributeKey<*>, Any> = mutableMapOf()
 

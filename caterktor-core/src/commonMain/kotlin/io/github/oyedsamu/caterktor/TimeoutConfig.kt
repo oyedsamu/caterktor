@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 /**
@@ -41,7 +43,6 @@ package io.github.oyedsamu.caterktor
  *   from the moment the pipeline starts executing to the first byte of the
  *   response body. Enforced by [NetworkClient] via a coroutine timeout.
  */
-@ExperimentalCaterktor
 public data class TimeoutConfig(
     public val connectTimeoutMs: Long? = null,
     public val socketTimeoutMs: Long? = null,

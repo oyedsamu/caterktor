@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor.engine.okhttp
 
 import io.github.oyedsamu.caterktor.ExperimentalCaterktor
@@ -28,7 +30,6 @@ import io.ktor.client.engine.okhttp.OkHttpConfig
  * @param block Configuration for the underlying Ktor OkHttp engine.
  * @return A [KtorTransport] ready to be assigned to [CaterKtorBuilder.transport].
  */
-@ExperimentalCaterktor
 public fun OkHttpTransport(
     block: io.ktor.client.HttpClientConfig<OkHttpConfig>.() -> Unit = {},
 ): KtorTransport = KtorTransport(HttpClient(OkHttp, block), ownsHttpClient = true)

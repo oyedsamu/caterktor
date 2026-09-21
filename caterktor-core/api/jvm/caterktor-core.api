@@ -229,6 +229,7 @@ public final class io/github/oyedsamu/caterktor/Headers {
 	public final fun getNames ()Ljava/util/Set;
 	public fun hashCode ()I
 	public final fun plus (Lio/github/oyedsamu/caterktor/Headers;)Lio/github/oyedsamu/caterktor/Headers;
+	public final fun toBuilder ()Lio/github/oyedsamu/caterktor/Headers$Builder;
 	public final fun toMap ()Ljava/util/Map;
 	public fun toString ()Ljava/lang/String;
 }

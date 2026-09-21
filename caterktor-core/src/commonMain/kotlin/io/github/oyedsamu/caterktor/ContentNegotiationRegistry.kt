@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 /**
@@ -10,7 +12,6 @@ package io.github.oyedsamu.caterktor
  *   such as `charset=UTF-8`;
  * - rejecting duplicate registrations for the same bare media type.
  */
-@ExperimentalCaterktor
 public class ContentNegotiationRegistry private constructor(
     public val entries: List<Entry>,
 ) {
