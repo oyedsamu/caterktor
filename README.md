@@ -7,6 +7,8 @@
 [![Version](https://img.shields.io/badge/version-0.4.0-brightgreen)](https://central.sonatype.com/search?q=io.github.oyedsamu)
 [![API](https://img.shields.io/badge/API-BCV%20gated-7F52FF)](https://github.com/Kotlin/binary-compatibility-validator)
 
+[Changelog](CHANGELOG.md) · [Releases](https://github.com/oyedsamu/caterktor/releases)
+
 ---
 
 ## Why CaterKtor instead of Ktor directly?
