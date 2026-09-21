@@ -191,6 +191,33 @@ class NetworkConfigTest {
     }
 
     @Test
+    fun timeouts_reach_the_engine_factory() {
+        val engine = FakeEngine(setOf(TransportCapability.Proxy))
+
+        CaterKtor {
+            engine(engine)
+            timeout {
+                connectTimeoutMs = 1_500
+                socketTimeoutMs = 2_500
+                requestTimeoutMs = 9_000
+            }
+        }
+
+        assertEquals(1_500, engine.lastContext?.timeout?.connectTimeoutMs)
+        assertEquals(2_500, engine.lastContext?.timeout?.socketTimeoutMs)
+        assertEquals(9_000, engine.lastContext?.timeout?.requestTimeoutMs)
+    }
+
+    @Test
+    fun an_engine_without_a_timeout_block_gets_the_defaults() {
+        val engine = FakeEngine(setOf(TransportCapability.Proxy))
+
+        CaterKtor { engine(engine) }
+
+        assertEquals(TimeoutConfig(), engine.lastContext?.timeout)
+    }
+
+    @Test
     fun proxy_specs_reject_malformed_input() {
         assertFailsWith<IllegalArgumentException> { ProxySpec.Http("  ") }
         assertFailsWith<IllegalArgumentException> { ProxySpec.Http("https://proxy.corp:8443") }

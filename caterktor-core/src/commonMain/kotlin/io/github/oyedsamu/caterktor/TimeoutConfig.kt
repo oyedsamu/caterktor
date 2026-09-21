@@ -11,9 +11,21 @@ package io.github.oyedsamu.caterktor
  *   via a coroutine timeout around the full pipeline execution for a single
  *   attempt. This is independent of the transport engine's own timeouts.
  * - **Connect and socket timeouts** ([connectTimeoutMs], [socketTimeoutMs])
- *   — advisory values. Pass them to the engine factory when constructing the
- *   transport (e.g. `OkHttpTransport { ... }`); CaterKtor records them here
- *   for introspection and potential enforcement by the transport adapter.
+ *   — applied to the engine by the [TransportFactory] passed to
+ *   [CaterKtorBuilder.engine]. A transport assigned directly to
+ *   [CaterKtorBuilder.transport] is constructed before the builder runs, and a
+ *   Ktor engine cannot be reconfigured afterwards, so these two values cannot
+ *   reach it; configure that transport's own engine block instead.
+ *
+ * | Engine | `connectTimeoutMs` | `socketTimeoutMs` |
+ * |---|---|---|
+ * | `Cio` | `endpoint.connectTimeout` | `endpoint.socketTimeout` |
+ * | `OkHttp` | `connectTimeout` | `readTimeout` and `writeTimeout` |
+ * | `Darwin` | not expressible | `timeoutIntervalForRequest` |
+ *
+ * `NSURLSession` has no separate connect timeout, so on Darwin the connect
+ * phase is bounded by [socketTimeoutMs] and by [requestTimeoutMs] rather than
+ * independently.
  *
  * All values are in milliseconds. `null` means "no limit" for that dimension.
  *
@@ -36,9 +48,11 @@ package io.github.oyedsamu.caterktor
  * ```
  *
  * @property connectTimeoutMs Maximum time (ms) to establish a TCP connection.
- *   Advisory — the transport engine is responsible for enforcement.
+ *   Applied by the engine when the transport comes from [CaterKtorBuilder.engine].
+ *   Not expressible on Darwin.
  * @property socketTimeoutMs Maximum idle time (ms) between data packets on an
- *   open connection. Advisory — the transport engine is responsible.
+ *   open connection. Applied by the engine when the transport comes from
+ *   [CaterKtorBuilder.engine].
  * @property requestTimeoutMs Maximum time (ms) for a single request attempt,
  *   from the moment the pipeline starts executing to the first byte of the
  *   response body. Enforced by [NetworkClient] via a coroutine timeout.

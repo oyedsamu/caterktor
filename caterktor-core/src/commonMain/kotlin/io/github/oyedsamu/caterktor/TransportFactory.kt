@@ -35,10 +35,15 @@ public enum class TransportCapability {
  *
  * @property network Connection-level settings collected from the
  *   `network { }` block.
+ * @property timeout Timeouts collected from the `timeout { }` block. Engines
+ *   apply [TimeoutConfig.connectTimeoutMs] and [TimeoutConfig.socketTimeoutMs];
+ *   [TimeoutConfig.requestTimeoutMs] is enforced by [NetworkClient] and is
+ *   passed here only so engines can align their own limits with it.
  */
 @ExperimentalCaterktor
 public data class TransportContext(
     public val network: NetworkConfig = NetworkConfig.Default,
+    public val timeout: TimeoutConfig = TimeoutConfig(),
 )
 
 /**

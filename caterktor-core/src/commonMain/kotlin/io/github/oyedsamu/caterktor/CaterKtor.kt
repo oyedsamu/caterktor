@@ -63,8 +63,8 @@ public class CaterKtorBuilder internal constructor() {
      *
      * [TimeoutConfig.requestTimeoutMs] is enforced by [NetworkClient] via a
      * coroutine timeout around each pipeline execution. [TimeoutConfig.connectTimeoutMs]
-     * and [TimeoutConfig.socketTimeoutMs] are advisory — pass them to the engine
-     * factory for enforcement at the transport level.
+     * and [TimeoutConfig.socketTimeoutMs] are applied to the engine, which requires the
+     * transport to come from [engine] rather than being assigned to [transport].
      */
     public fun timeout(block: TimeoutConfig.Builder.() -> Unit): CaterKtorBuilder = apply {
         _timeoutConfig = TimeoutConfig.Builder().apply(block).build()
@@ -345,6 +345,8 @@ public class CaterKtorBuilder internal constructor() {
                 "Remove the setting or choose an engine that supports it."
         }
 
-        return factory.create(TransportContext(network = resolvedNetwork))
+        return factory.create(
+            TransportContext(network = resolvedNetwork, timeout = _timeoutConfig ?: TimeoutConfig()),
+        )
     }
 }

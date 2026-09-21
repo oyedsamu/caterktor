@@ -14,6 +14,7 @@ with the full notes.
 
 - `Headers.toBuilder()`, returning a builder seeded with the existing headers. Interceptors
   adding a header previously had to rebuild from `toMap()` or silently drop the rest.
+- `TransportContext.timeout`, so engines receive the `timeout { }` block.
 
 ### Changed
 
@@ -28,7 +29,15 @@ with the full notes.
   `NetworkEvent`, response unwrapping and the `network { }` engine configuration added in 0.4.0.
   See [API stability](README.md#api-stability).
 
-This is a source-level change only. The ABI is unchanged, so `0.4.0` consumers are unaffected.
+### Fixed
+
+- `TimeoutConfig.connectTimeoutMs` and `socketTimeoutMs` now reach the engine. They were
+  documented as advisory and no engine read them, so setting either did nothing. They apply
+  when the transport comes from `engine(...)`; `Darwin` has no separate connect timeout, which
+  the documentation now states.
+
+The graduation is a source-level change only, and the ABI is unchanged apart from
+`Headers.toBuilder()`, so `0.4.0` consumers are unaffected.
 
 ## [0.4.0] — 2026-09-20
 
