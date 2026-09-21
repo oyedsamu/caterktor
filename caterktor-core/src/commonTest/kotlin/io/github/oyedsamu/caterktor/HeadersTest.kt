@@ -239,4 +239,29 @@ class HeadersTest {
         }
         assertEquals(listOf("application/json", "text/plain"), headers.toMap()["accept"])
     }
+
+    @Test
+    fun toBuilder_keeps_existing_headers_including_repeats() {
+        val original = Headers.Builder()
+            .set("X-App", "caterktor")
+            .add("Accept", "application/json")
+            .add("Accept", "text/plain")
+            .build()
+
+        val extended = original.toBuilder().set("X-Tag", "first").build()
+
+        assertEquals("caterktor", extended["X-App"])
+        assertEquals("first", extended["X-Tag"])
+        assertEquals(listOf("application/json", "text/plain"), extended.getAll("Accept"))
+    }
+
+    @Test
+    fun toBuilder_does_not_mutate_the_original() {
+        val original = Headers.Builder().set("X-App", "caterktor").build()
+
+        original.toBuilder().set("X-Tag", "first").build()
+
+        assertNull(original["X-Tag"])
+    }
+
 }

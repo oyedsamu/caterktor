@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor.engine.cio
 
 import io.github.oyedsamu.caterktor.ExperimentalCaterktor
@@ -23,7 +25,6 @@ import io.ktor.client.engine.cio.CIOEngineConfig
  * @param block Optional configuration for the underlying Ktor CIO engine.
  * @return A [KtorTransport] ready to be assigned to [CaterKtorBuilder.transport].
  */
-@ExperimentalCaterktor
 public fun CioTransport(
     block: io.ktor.client.HttpClientConfig<CIOEngineConfig>.() -> Unit = {},
 ): KtorTransport = KtorTransport(HttpClient(CIO, block), ownsHttpClient = true)

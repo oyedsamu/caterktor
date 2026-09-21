@@ -370,7 +370,6 @@ as `NetworkEvent.CircuitBreakerTransition`.
 ### JSON (most common)
 
 ```kotlin
-@OptIn(ExperimentalCaterktor::class)
 val client = CaterKtor {
     transport = OkHttpTransport()
     addConverter(KotlinxJsonConverter())        // lenient defaults
@@ -385,7 +384,6 @@ val result: NetworkResult<User> = client.get("/users/me")
 ### Multiple formats via content negotiation
 
 ```kotlin
-@OptIn(ExperimentalCaterktor::class)
 val client = CaterKtor {
     transport = OkHttpTransport()
     contentNegotiation {
@@ -672,7 +670,6 @@ RequestBody.Source(
 ## Timeouts
 
 ```kotlin
-@OptIn(ExperimentalCaterktor::class)
 val client = CaterKtor {
     transport = OkHttpTransport()
     timeout {
@@ -723,6 +720,31 @@ Assigning `transport` directly still works and remains the right choice for a pr
 
 ---
 
+## API stability
+
+Making a request and decoding it is stable. Building a client, writing an interceptor,
+implementing a transport, the three engine transports and the JSON, CBOR and protobuf
+converters carry no opt-in requirement, and changes to them follow semantic versioning.
+
+Policy and newer surfaces are still `@ExperimentalCaterktor` and need
+`@OptIn(ExperimentalCaterktor::class)` at the call site:
+
+| Stable | Experimental |
+|---|---|
+| `CaterKtor { }`, `CaterKtorBuilder`, `NetworkClient` | `auth { }` and `AuthRefreshInterceptor` |
+| `NetworkRequest`, `NetworkResponse`, `NetworkResult`, `NetworkError` | `RetryInterceptor`, `RetryPolicy`, `CircuitBreaker` |
+| `Headers`, `QueryParameters`, `HttpMethod`, `HttpStatus`, `Attributes` | `LoggerInterceptor` and `RedactionEngine` |
+| `Interceptor`, `Chain`, `Transport`, `CloseableTransport` | `NetworkEvent` and `NetworkClient.events` |
+| `TimeoutConfig`, `BodyConverter`, `ContentNegotiationRegistry` | `network { }`, `engine(...)`, `ProxySpec`, `DnsResolver` |
+| `KtorTransport`, `CioTransport`, `OkHttpTransport`, `DarwinTransport` | `ResponseUnwrapper`, `RequestEnveloper` |
+| `KotlinxJsonConverter`, `KotlinxCborConverter`, `KotlinxProtobufConverter` | `caterktor-testing`, `caterktor-websocket`, `caterktor-sse`, `caterktor-connectivity` |
+
+An experimental API can change or be removed in any release without a deprecation cycle. A
+stable one cannot, which is why the line sits where it does: the pipeline has been in use since
+`0.1.0`, while proxy and DNS configuration landed in `0.4.0` and has had no field feedback yet.
+
+---
+
 ## Conventions
 
 **Always handle both variants.** `NetworkResult` is sealed. The compiler will warn on a non-exhaustive
@@ -739,16 +761,17 @@ internal service) is the right granularity.
 **Use `describePipeline()` when debugging ordering issues.** The output is the contract — the list
 matches the exact execution order at runtime.
 
-**Scope `@OptIn(ExperimentalCaterktor::class)` to the file, not the module.** This makes it easy
-to find and update call sites when surfaces stabilise.
+**Scope `@OptIn(ExperimentalCaterktor::class)` to the file, not the module.** Only experimental
+surfaces need it — see [API stability](#api-stability). Keeping it per file makes the remaining
+call sites easy to find when those surfaces stabilise.
 
 ---
 
 ## What's next
 
-CaterKtor is moving from `0.3.0` into `0.4.0`. The next release moves engine
-configuration into the builder, so settings that have to reach a Ktor engine at
-construction time are no longer out of reach once a transport exists.
+CaterKtor is moving from `0.4.0` into `0.5.0`. The next release makes the request pipeline
+stable, so building a client and writing an interceptor no longer require an opt-in at every
+call site.
 
 Every release so far has been additive: `apiCheck` gates each module, and no
 declaration published in `0.2.0` or `0.3.0` has been removed.
@@ -780,8 +803,14 @@ declaration published in `0.2.0` or `0.3.0` has been removed.
 - `ProxySpec.Http` rejects schemes the engines disagree about
 - Ktor 3.6.0
 
+### `0.5.0` — a stable request pipeline
+- The client builder, `NetworkRequest`, `Interceptor`, `Chain` and `Transport` leave `@ExperimentalCaterktor`
+- The engine transports and the JSON, CBOR and protobuf converters leave it with them
+- `Headers.toBuilder()`, so an interceptor can add a header without dropping the others
+- Policy surfaces stay experimental — see [API stability](#api-stability)
+
 ### `1.0.0` — API stability
-- `Interceptor` and `Chain` graduate out of `@ExperimentalCaterktor`
+- Auth, retry and the circuit breaker graduate once their shape has field feedback
 - Full semver breaking-change guarantee
 
 ### Explicit non-goals
@@ -807,8 +836,9 @@ These are honest limitations of the current release, not bugs that slipped throu
 - **`CaterktorTestServer` is still in-memory by design.** Use JVM-only
   `CaterktorHttpServer` when tests need a real TCP socket and HTTP framing semantics.
 
-- **`@ExperimentalCaterktor` is required on most public API surfaces.** Graduation is intentionally
-  conservative; APIs stay experimental when adapter/platform work may still reshape them.
+- **Policy surfaces are still `@ExperimentalCaterktor`.** Auth, retry, the circuit breaker,
+  logging, events and engine configuration need an opt-in at the call site. The request pipeline
+  itself does not — see [API stability](#api-stability).
 
 - **OTel and Ktorfit adapters are not yet released.** These modules remain reserved until local
   all-target release gates prove they can share CaterKtor's runtime semantics.

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor.serialization.cbor
 
 import io.github.oyedsamu.caterktor.ContentNegotiationRegistry
@@ -7,7 +9,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 /**
  * Register the kotlinx.serialization CBOR converter for content negotiation.
  */
-@ExperimentalCaterktor
 @OptIn(ExperimentalSerializationApi::class)
 public fun ContentNegotiationRegistry.Builder.cbor(
     converter: KotlinxCborConverter = KotlinxCborConverter(),

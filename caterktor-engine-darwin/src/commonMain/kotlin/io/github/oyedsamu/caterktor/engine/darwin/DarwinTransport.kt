@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor.engine.darwin
 
 import io.github.oyedsamu.caterktor.ExperimentalCaterktor
@@ -20,7 +22,6 @@ import io.ktor.client.engine.darwin.DarwinClientEngineConfig
  * @param block Optional configuration for the underlying Ktor Darwin engine.
  * @return A [KtorTransport] ready to be assigned to [CaterKtorBuilder.transport].
  */
-@ExperimentalCaterktor
 public fun DarwinTransport(
     block: io.ktor.client.HttpClientConfig<DarwinClientEngineConfig>.() -> Unit = {},
 ): KtorTransport = KtorTransport(HttpClient(Darwin, block), ownsHttpClient = true)

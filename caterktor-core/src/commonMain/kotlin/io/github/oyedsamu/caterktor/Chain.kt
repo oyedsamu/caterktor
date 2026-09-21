@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 import kotlin.time.Clock
@@ -27,7 +29,6 @@ import kotlinx.coroutines.withTimeoutOrNull
  * @see Interceptor
  * @see NetworkClient
  */
-@ExperimentalCaterktor
 public interface Chain {
     /**
      * The request currently entering this stage. May differ from the original
@@ -56,6 +57,7 @@ public interface Chain {
      * Interceptors should use this for structured lifecycle events that belong
      * on [NetworkClient.events].
      */
+    @ExperimentalCaterktor
     public fun emitEvent(event: NetworkEvent)
 
     /**
@@ -179,7 +181,6 @@ private fun Long?.orMax(): Long = this ?: Long.MAX_VALUE
  * retry and auth-refresh follow-up. Ordinary interceptors should call
  * [Chain.proceed].
  */
-@ExperimentalCaterktor
 @OptIn(ExperimentalCaterktor::class)
 public suspend fun Chain.proceedForAttempt(
     request: NetworkRequest,

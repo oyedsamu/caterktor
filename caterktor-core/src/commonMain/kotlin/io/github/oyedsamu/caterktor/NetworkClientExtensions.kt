@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 import kotlin.coroutines.cancellation.CancellationException
@@ -20,7 +22,6 @@ import kotlin.time.Instant
  * @param attributes Typed interceptor communication bag.
  * @param deadline Optional wall-clock deadline for the entire logical request.
  */
-@ExperimentalCaterktor
 public suspend inline fun <reified T : Any> NetworkClient.get(
     url: String,
     pathParams: Map<String, Any> = emptyMap(),
@@ -40,7 +41,6 @@ public suspend inline fun <reified T : Any> NetworkClient.get(
  * HEAD responses have no body; use [Unit] as [T] or [NetworkResult.Success.headers] for the
  * response headers.
  */
-@ExperimentalCaterktor
 public suspend inline fun <reified T : Any> NetworkClient.head(
     url: String,
     pathParams: Map<String, Any> = emptyMap(),
@@ -59,7 +59,6 @@ public suspend inline fun <reified T : Any> NetworkClient.head(
  *
  * Use `delete<Unit>(...)` for endpoints that return 204 No Content.
  */
-@ExperimentalCaterktor
 public suspend inline fun <reified T : Any> NetworkClient.delete(
     url: String,
     pathParams: Map<String, Any> = emptyMap(),
@@ -89,7 +88,6 @@ public suspend inline fun <reified T : Any> NetworkClient.delete(
  * @param attributes Typed interceptor communication bag.
  * @param deadline Optional wall-clock deadline for the entire logical request.
  */
-@ExperimentalCaterktor
 public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.post(
     url: String,
     body: B,
@@ -115,7 +113,6 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.post(
 }
 
 /** Execute a PUT request. See [post] for parameter documentation. */
-@ExperimentalCaterktor
 public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.put(
     url: String,
     body: B,
@@ -141,7 +138,6 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.put(
 }
 
 /** Execute a PATCH request. See [post] for parameter documentation. */
-@ExperimentalCaterktor
 public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.patch(
     url: String,
     body: B,
@@ -173,7 +169,6 @@ public suspend inline fun <reified T : Any, reified B : Any> NetworkClient.patch
  * Public only because the inline [post] / [put] / [patch] helpers must delegate
  * to it across module boundaries. Prefer those entry points in application code.
  */
-@ExperimentalCaterktor
 public suspend fun <T : Any, B : Any> NetworkClient.callWithBody(
     resolvedUrl: String,
     method: HttpMethod,

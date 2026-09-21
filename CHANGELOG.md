@@ -10,11 +10,25 @@ with the full notes.
 
 ## [Unreleased]
 
+### Added
+
+- `Headers.toBuilder()`, returning a builder seeded with the existing headers. Interceptors
+  adding a header previously had to rebuild from `toMap()` or silently drop the rest.
+
 ### Changed
 
-- The core pipeline is no longer `@ExperimentalCaterktor`. Building a client, writing an
-  interceptor and implementing a transport no longer require an opt-in at the call site.
-  Newer surfaces stay experimental — see [API stability](README.md#api-stability).
+- The request pipeline is no longer `@ExperimentalCaterktor`. `CaterKtor { }`,
+  `CaterKtorBuilder`, `NetworkClient`, `NetworkRequest`, `Interceptor`, `Chain`, `Transport`,
+  `QueryParameters`, `Attributes`, `TimeoutConfig`, `BodyConverter` and
+  `ContentNegotiationRegistry` need no opt-in at the call site.
+- `KtorTransport`, `CioTransport`, `OkHttpTransport`, `DarwinTransport`, the `ktor { }` block and
+  the JSON, CBOR and protobuf converters graduated with them, so a client that makes a request
+  and decodes JSON needs no opt-in at all.
+- Policy and newer surfaces stay experimental: auth, retry, the circuit breaker, logging,
+  `NetworkEvent`, response unwrapping and the `network { }` engine configuration added in 0.4.0.
+  See [API stability](README.md#api-stability).
+
+This is a source-level change only. The ABI is unchanged, so `0.4.0` consumers are unaffected.
 
 ## [0.4.0] — 2026-09-20
 

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 /**
@@ -13,7 +15,6 @@ package io.github.oyedsamu.caterktor
  *   Typical uses include signalling to downstream interceptors (e.g. [CaterKtorKeys.SKIP_AUTH])
  *   or carrying per-request metadata.
  */
-@ExperimentalCaterktor
 public data class NetworkRequest(
     public val method: HttpMethod,
     public val url: String,

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 import io.ktor.client.HttpClient
@@ -75,7 +77,6 @@ import io.ktor.http.HttpMethod as KtorHttpMethod
  *   factory modules pass `true`; caller-supplied clients should usually keep
  *   the default `false`.
  */
-@ExperimentalCaterktor
 public class KtorTransport(
     public val httpClient: HttpClient,
     public val ownsHttpClient: Boolean = false,

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 import kotlin.reflect.KType
@@ -33,7 +35,6 @@ import kotlin.reflect.KType
  * site — never constructed manually. Implementations may cast to
  * [kotlinx.serialization.serializerOrNull] or any other reflective lookup.
  */
-@ExperimentalCaterktor
 public interface BodyConverter {
 
     /**

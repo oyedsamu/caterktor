@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 import io.ktor.client.HttpClientConfig
@@ -28,7 +30,6 @@ import io.ktor.client.HttpClientConfig
  * }
  * ```
  */
-@ExperimentalCaterktor
 public fun CaterKtorBuilder.ktor(block: HttpClientConfig<*>.() -> Unit): CaterKtorBuilder =
     addTransportFinalizer { transport ->
         if (transport is KtorTransport) {

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor.serialization.protobuf
 
 import io.github.oyedsamu.caterktor.BodyConverter
@@ -30,7 +32,6 @@ import kotlin.reflect.KType
  * Instances are stateless beyond the (immutable) [protoBuf] configuration object and are
  * therefore safe to share across coroutines and threads.
  */
-@ExperimentalCaterktor
 @OptIn(ExperimentalSerializationApi::class)
 public class KotlinxProtobufConverter(
     public val protoBuf: ProtoBuf = ProtoBuf,

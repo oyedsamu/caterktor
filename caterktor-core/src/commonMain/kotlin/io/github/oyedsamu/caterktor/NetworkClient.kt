@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 import kotlin.random.Random
@@ -40,7 +42,6 @@ import kotlinx.io.buffered
  * registered [converters], and map the resulting [NetworkResponse] into a
  * [NetworkResult].
  */
-@ExperimentalCaterktor
 public class NetworkClient internal constructor(
     private val transport: Transport,
     internal val interceptors: List<Interceptor>,
@@ -101,6 +102,7 @@ public class NetworkClient internal constructor(
      * }
      * ```
      */
+    @ExperimentalCaterktor
     public val events: SharedFlow<NetworkEvent> = _events.asSharedFlow()
 
     @PublishedApi

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor
 
 /**
@@ -15,7 +17,6 @@ package io.github.oyedsamu.caterktor
  * }
  * ```
  */
-@ExperimentalCaterktor
 public class QueryParameters private constructor(
     public val entries: List<Entry>,
 ) {
@@ -80,7 +81,6 @@ public class QueryParameters private constructor(
 /**
  * Build query parameters from ordered pairs.
  */
-@ExperimentalCaterktor
 public fun queryParameters(vararg pairs: Pair<String, Any?>): QueryParameters =
     QueryParameters {
         for ((name, value) in pairs) {
@@ -93,7 +93,6 @@ public fun queryParameters(vararg pairs: Pair<String, Any?>): QueryParameters =
  *
  * Iterable values become repeated query parameters. `null` values are omitted.
  */
-@ExperimentalCaterktor
 public fun queryParameters(params: Map<String, Any?>): QueryParameters =
     QueryParameters {
         for ((name, value) in params) {

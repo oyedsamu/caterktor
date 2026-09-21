@@ -85,6 +85,29 @@ These are enforced by CI and by review. They apply to every module.
 If you are unsure whether a change affects the public surface, run
 `./gradlew apiCheck` locally. The diff is the answer.
 
+## Releasing
+
+The version appears in two places, and they serve different purposes:
+
+- `gradle.properties` (`caterktor.version`) is the development version, meaning the next release.
+- `README.md` — the badge and every install snippet — shows the version users should depend on
+  today. It moves in the release commit, not before.
+
+CI derives the published version from the tag (`-Pcaterktor.version=${TAG#v}`), so
+`gradle.properties` never decides what gets published.
+
+1. Move the `Unreleased` entries in `CHANGELOG.md` under the new version, dated.
+2. Set the new version in `gradle.properties` and in the README badge and install snippets.
+3. Verify locally. `./gradlew check apiCheck` is **not** sufficient: it runs neither the Android
+   AAR metadata check nor publishing. Also run `./gradlew publishToMavenLocal`, which is what the
+   CI publication gate runs, and `macosArm64Test` if you are on a Mac.
+4. Merge, then annotate the tag on the merge commit: `git tag -a vX.Y.Z -m "..."`. The tag message
+   becomes the GitHub release body, so write it as release notes.
+5. Push the tag. `release.yml` verifies, uploads to Central Portal staging and creates the GitHub
+   release marked latest.
+6. Publish the staged deployment in the Central Portal. `automaticRelease = false` is deliberate,
+   and a released version can never be overwritten or deleted — only superseded.
+
 ## Commit messages
 
 We use Conventional Commits. The allowed types are:

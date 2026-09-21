@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCaterktor::class)
+
 package io.github.oyedsamu.caterktor.serialization.cbor
 
 import io.github.oyedsamu.caterktor.BodyConverter
@@ -34,7 +36,6 @@ import kotlin.reflect.KType
  *
  * @property cbor The [Cbor] instance used for all encode/decode operations.
  */
-@ExperimentalCaterktor
 @OptIn(ExperimentalSerializationApi::class)
 public class KotlinxCborConverter(
     public val cbor: Cbor = Cbor,
